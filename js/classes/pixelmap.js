@@ -187,6 +187,9 @@ export default class PixelMap {
         this.pixels[i4 + 2] = color.b;
         this.pixels[i4 + 3] = color.a;
     }
+    /**
+     * Applies the texture buffer (including any recent changes) to the rendered texture in the scene
+     */
     ApplyPixels() {
         const gl = canvas.app;
         const tex = PIXI.Texture.fromBuffer(this.pixels, this.width, this.height);
