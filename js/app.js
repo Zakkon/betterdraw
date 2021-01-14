@@ -64,8 +64,12 @@ Hooks.on("ready", async function() {
   if(settings.active && settings.hasBuffer) {
     //The layer is active, and a buffer has been cached
     let buffer = getSetting("buffer");
+    //There's a problem, we get the buffer in a strange non-array format, and we need to fix that
+    var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
+    console.log(bufferArray.length + " = " + (settings.spriteW * settings.spriteH * 4));
+    console.log(bufferArray);
     //Load the layer on our client
-    let e = await LayerSettings.LoadFromBuffer(settings, buffer);
+    let e = await LayerSettings.LoadFromBuffer(settings, bufferArray);
     let task = new LoadAction();
     task.Perform(e);
   }
