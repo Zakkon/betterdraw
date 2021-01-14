@@ -82,23 +82,21 @@ function recieveNetMsg(data){
   console.log("MSG RECIEVED!");
   console.log(data);
   switch(data.event){
-    case "clientready": //A new client has just connected/reloaded their scene
-      if(game.user.isGM) { serverOnClientReady(data); }
+    case "onClientJoin": //A new client has just connected/reloaded their scene
+      if(game.user.isGM) { NetSyncer.onClientJoin(); }
+      break;
+    case "strokeparts":
+      NetSyncer.onStrokePartsRecieved(data.parts);
       break;
     default: console.error("message event " + data.event + " is not recognized"); break;
   }
-}
-/**
- * Called on the GM whenever a client has reloaded their scene
- * @param {} data 
- */
-function serverOnClientReady(data) {
-  
 }
 Hooks.on('updateUser', () => {
   console.log("UPDATEUSER");
 });
 Hooks.on('updateScene', () => {
+  console.log("UPDATE SCENE");
+  //console.log(arg1);
   NetSyncer.onUpdateScene();
 });
 /**

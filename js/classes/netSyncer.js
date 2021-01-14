@@ -1,6 +1,7 @@
 import { setSetting, getSetting } from "../settings";
 import { LayerSettings } from "./layerSettings";
 import LoadAction from "./loadAction";
+import { StrokePart } from "./tools/strokePart";
 
 export class NetSyncer {
 //Assumes there is only one GM in the session, and that he is authorative when it comes to drawing
@@ -9,7 +10,7 @@ export class NetSyncer {
      * Called from the isMaster hook in Foundry
      */
     static onReady() {
-        
+        if(!NetSyncer.isMaster){game.socket.emit('module.betterdraw', {event: "onClientJoin"});}
     }
     /**
      * Called from the updateScene hook in Foundry
@@ -41,15 +42,39 @@ export class NetSyncer {
      */
     static onClientJoin() {
         if(!NetSyncer.isMaster) { return; }
+        //We might want to set scene flags here, in order to give the client the full texture
+        this.updateSceneFlags();
     }
     /**
      * Called by the authorative client whenever a stroke has finished and its effects have been applied onto the pixelmap
      */
-    static async onStrokeEnd() {
-        console.log("onStrokeEnd");
+    static onStrokeEnd() {
         if(!NetSyncer.isMaster) { return; }
+       
+        //this.updateSceneFlags(); //lazy
+    }
+    static async updateSceneFlags(){
         //Apply the pixelmap buffer to the scene flags
         await setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
         //Clients should now have onUpdateScene called
+    }
+    /**
+     * 
+     * @param {StrokePart[]} parts 
+     */
+    static sendStrokeUpdates(parts){
+        if(!NetSyncer.isMaster){return;}
+        //going to straightup just send the parts as they are
+        game.socket.emit('module.betterdraw', {event: "strokeparts", parts: parts});
+    }
+    /**
+     * Called from the socket on the "strokeparts" event. Recieves an array of StrokeParts
+     * @param {StrokePart[]} parts 
+     */
+    static onStrokePartsRecieved(parts){
+        if(NetSyncer.isMaster){return;}
+        //Tell the pixelmap to draw according to these instructions
+        //Todo: make a timestamp comparison, to make sure we arent drawing out-of-date instructions
+        canvas.drawLayer.pixelmap.DrawStrokeParts(parts);
     }
 }

@@ -178,6 +178,24 @@ export default class PixelMap {
         if (autoApply) { this.ApplyPixels(); }
         return edits;
     }
+    DrawStrokeParts(parts) {
+        //todo: check against duplicate coordinates
+        for(let i = 0; i < parts.length; ++i)
+        {
+            let p = parts[i];
+            for(let j = 0; j < p.xyCoords.length; ++j)
+            {
+                let c = Color32.fromWeb(p.color); //Convert color from #FFFFFF format to a Color32
+                if(p.cellBased) { } //TODO
+                else { this.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, c, false); }
+            }
+            
+        }
+        //Apply the pixels (renders the texture to the sprite)
+        if(parts.length>0) { this.ApplyPixels(); }
+        //canvas.drawLayer.update();
+
+    }
     _setPixel(x, y, color){
         const i4 = ((y * this.width) + x) * 4;
         this._setPixel_i4(i4, color);

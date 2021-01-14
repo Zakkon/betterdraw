@@ -25,22 +25,11 @@ export default class BrushTool extends DrawTool {
       }
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
+        if(parts===undefined||parts.length<1){return;}
         const pm = canvas.drawLayer.pixelmap;
-        //todo: check against duplicate coordinates
-        for(let i = 0; i < parts.length; ++i)
-        {
-            let p = parts[i];
-            for(let j = 0; j < p.xyCoords.length; ++j)
-            {
-                let c = Color32.fromWeb(p.color); //Convert color from #FFFFFF format to a Color32
-                if(p.cellBased) { } //TODO
-                else { pm.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, c, false); }
-            }
-            
-        }
-        //Apply the pixels (renders the texture to the sprite)
-        if(parts.length>0) { pm.ApplyPixels(); }
-        //canvas.drawLayer.update();
+        pm.DrawStrokeParts(parts);
+
+        NetSyncer.sendStrokeUpdates(parts);
     }
 
     onPointerDown(p,e) {
@@ -126,26 +115,4 @@ export default class BrushTool extends DrawTool {
         if(this.op){ this.syncer.LogBrushEnd(); } //logHistory();
         this.op = false;
     }
-    /* syncUpdate(){
-        if(!this.op){
-            this.doSync();
-        }
-        else if(this.didChange)
-        {
-
-        }
-    }
-    doSync(){
-        //Take all the changes that have occured since last sync, send them to clients
-
-        //Get unsynced strokes from the syncer
-        var strokes = syncer.GetReadyStrokeParts();
-        //Note: now that we have the strokes, we need to send them. There is no backup of the strokes.
-        for (let i = 0; i < strokes.Length; ++i)
-        {
-            var s = strokes[i];
-            //Todo: check that the stroke isnt too long, might want to split it up into parts before transmitting
-            Player.LocalPlayer.SSendDrawingInstructions(s.tabID, (byte)s.layerID, s.xyCoords, s.brushSize, s.rgba32, s.cellBased);
-        }
-    } */
 }

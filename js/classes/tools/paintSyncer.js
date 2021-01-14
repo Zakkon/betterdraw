@@ -35,6 +35,7 @@ export class PaintSyncer {
         this.activeStroke.isActive = false;
         NetSyncer.onStrokeEnd();
     }
+    
     GetReadyStrokeParts(){
         var parts = [];
         //Try to find strokes or parts of strokes that are waiting to be synced across the network
