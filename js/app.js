@@ -9,7 +9,7 @@ var pixels = require('image-pixels');
 import SimplefogConfig from '../simplefog/classes/SimplefogConfig.js'
 import BrushControls from '../simplefog/classes/BrushControls.js';
 import CreateLayerDialog from '../simplefog/classes/CreateLayerDialog.js';
-import { calcGridImportSize } from "../simplefog/helpers.js";
+import { calcGridImportSize } from "./helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 

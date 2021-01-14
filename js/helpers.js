@@ -1,4 +1,4 @@
-import Color32 from "../js/classes/color32";
+import Color32 from "./classes/color32";
 
 /**
  * Converts web colors to base 16
