@@ -6,9 +6,6 @@ import SimpleDrawLayer from "./classes/simpledraw.js";
 import ToolsHandler from "./classes/tools/toolsHandler.js";
 import { loadJSONasync, saveSceneSettings } from "./classes/serializiation/saveload.js";
 var pixels = require('image-pixels');
-import SimplefogConfig from '../simplefog/classes/SimplefogConfig.js'
-import BrushControls from '../simplefog/classes/BrushControls.js';
-import CreateLayerDialog from '../simplefog/classes/CreateLayerDialog.js';
 import { calcGridImportSize } from "./helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
