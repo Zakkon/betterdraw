@@ -1,5 +1,5 @@
 var pixels = require('image-pixels');
-import { calcGridImportSize, hexToColor, webToHex } from "../../simplefog/helpers.js";
+import { calcGridImportSize, hexToColor, webToHex } from "../helpers.js";
 import { getSetting, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
 import ToolsHandler from "./tools/toolsHandler.js";

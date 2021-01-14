@@ -1,5 +1,5 @@
 import { getUserSetting } from "../../settings";
-import { webToHex } from "../../../simplefog/helpers"
+import { webToHex } from "../../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";

@@ -3,12 +3,20 @@ procedure:
 >create left controls (needs layer)
 >rebuild the grid with new gridsize
 >create and place the rendertexture for the layer
-----------------------------------
+
+--------
 SYNCING
-----------------------------------
-VERSION ONE: Lazy Mode (functioning)
->Texture is stored in scene flags upon the GM completing the "create new layer" dialog
->Sceneflags keeps getting updated with the fresh texture each time the GM finishes drawing a stroke
->Clients joining the session have immediate access to the sceneflags, and thus the texture
->Clients detect changes to the scene flags with the updateScene hook, and can then refresh their displayed texture with the fresh texture data
-----------------------------------
+--------
+Lazy Way, relying on scene flags (functioning):
+>When layer is created, we put all the layer info (including texture buffer) in the scene flags
+>When clients join, they will already know the scene flags, and be able to reproduce the texture
+>GM will need to update the buffer at the end of every stroke, to keep the texture updated
+>clients will have their updateScene hook called, and use that fresh buffer to rebuild the texture
+Problems:
+setting scene flags is quite slow, and *will* cause framedrops when applying the buffer
+------------------------
+Intermediate Way, using scene flags & socket messages:
+>Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
+>clients recieving the StrokeParts can replicate the drawing in realtime on their texture
+>the StrokeParts needs a timestamp, which is compared to the timestamp of the most recent scene flags update, stored in the scene flags itself
+>if the scene flags update is more recent then the StrokePart, that means the StrokePart is outdated and we can simply use the buffer within the scene flags instead
