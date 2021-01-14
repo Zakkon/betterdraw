@@ -4,4 +4,17 @@ procedure:
 >rebuild the grid with new gridsize
 >create and place the rendertexture for the layer
 
-DONT FORGET TO SET socket: true in MANIFEST.JSON!
+--------
+SYNCING
+-------
+Lazy Way, using scene flags:
+>When layer is created, we put all the layer info (including texture buffer) in the scene flags
+>When clients join, they will already know the scene flags, and be able to reproduce the texture
+>GM will need to update the buffer at the end of every stroke, to keep the texture updated
+>clients will have their updateScene hook called, and use that fresh buffer to rebuild the texture
+------------------------
+Intermediate Way, using scene flags & socket messages:
+>Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
+>clients recieving the StrokeParts can replicate the drawing in realtime on their texture
+>the StrokeParts needs a timestamp, which is compared to the timestamp of the most recent scene flags update, stored in the scene flags itself
+>if the scene flags update is more recent then the StrokePart, that means the StrokePart is outdated and we can simply use the buffer within the scene flags instead
