@@ -39,10 +39,11 @@ export default class PixelMap {
     ReadFromBuffer(buffer, bufferWidth, bufferHeight, applyPixels=true) {
         //Simple check to make sure the buffer is the same size as stated
         if(buffer==undefined){console.error("buffer is undefined!");}
+        if(buffer.length===NaN){console.error("Buffer does not have a length property, are you sure its really a Uint8ClampedArray?"); return;}
         if(buffer.length != (bufferWidth*bufferHeight*4)){console.error("buffer is of the wrong size!"); return;}
         //We will essentially replace our pixel buffer with theirs
         this.pixels = buffer; //assume its a uin8clamped array, rgba32 format
-        if((this.width!=bufferWidth)||(this.height!=bufferHeight)) //See if this buffer is of a different size then our current one
+        if((this.width!==bufferWidth)||(this.height!==bufferHeight)) //See if this buffer is of a different size then our current one
         {
             this.width = bufferWidth; this.height = bufferHeight;
             //the texture needs to be resized

@@ -26,7 +26,7 @@ Hooks.on("canvasInit", function() {
     console.log("CANVASINIT_ON");
     //This function can be called on things like world grid rescale, so expect this to be called more then once
 
-    //This creates a visible sprite inside the drawLayer
+    //This creates a sprite inside the drawLayer, but hides it for now
     canvas.drawLayer.init();
     addToCanvasLayersArray(); //We need to call this so the game can find our drawLayer in some core functions
 
@@ -55,20 +55,28 @@ Hooks.on("ready", async function() {
   //game.socket.emit('module.betterdraw', {event: "clientready", userid: [game.user.id]});
   //game.socket.emit("module.BetterDraw", {event: "testevent", eventdata: ["hey"]});
 
+  await loadFromSceneFlags();
+});
+async function loadFromSceneFlags() {
   //Lets check the scene flags and see if any texture data is stored on there
   let settings = getSetting("drawlayerinfo");
   console.log(settings);
+  if(settings===undefined){return;}
   if(settings.active && settings.hasBuffer) {
     //The layer is active, and a buffer has been cached
     let buffer = getSetting("buffer");
+    //There's a problem, we get the buffer in a strange non-array format, and we need to fix that
+    var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
+    if(bufferArray.length!=settings.spriteW*settings.spriteH*4){console.error("Buffer does not match its specified size!"); return; }
     //Load the layer on our client
-    let e = await LayerSettings.LoadFromBuffer(settings, buffer);
+    let e = await LayerSettings.LoadFromBuffer(settings, bufferArray);
     let task = new LoadAction();
     task.Perform(e);
   }
+  else {
 
-  //canvas.drawLayer.pixelmap.DrawRect(0,0,20,20, new Color32(0,0,255), true);
-});
+  }
+}
 function recieveNetMsg(data){
   console.log("MSG RECIEVED!");
   console.log(data);
@@ -149,7 +157,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         });
       }
     }
-  });
+});
   
 /**
  * Handles adding the custom brush controls pallet

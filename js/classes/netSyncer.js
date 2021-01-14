@@ -1,4 +1,6 @@
-import { setSetting } from "../settings";
+import { setSetting, getSetting } from "../settings";
+import { LayerSettings } from "./layerSettings";
+import LoadAction from "./loadAction";
 
 export class NetSyncer {
 //Assumes there is only one GM in the session, and that he is authorative when it comes to drawing
@@ -14,21 +16,21 @@ export class NetSyncer {
      */
     static onUpdateScene() {
         //The GM has the authorative version of the texture already, no need to fetch it from sceneflags
-        console.log("sceneUpdate");
         if(NetSyncer.isMaster) { return; }
         NetSyncer.refreshLayerTexture();
     }
     static async refreshLayerTexture() {
+        console.log("Refreshing layer texture...");
         //Fetch layer info from sceneflags
         const settings = getSetting("drawlayerinfo");
         console.log(settings);
         if(settings.active && settings.hasBuffer) {
           //The layer is active, and a buffer has been cached
-          let buffer = getSetting("buffer");
-          //Load the layer on our client
-          let e = await LayerSettings.LoadFromBuffer(settings, buffer);
-          let task = new LoadAction();
-          task.Perform(e);
+          const buffer = getSetting("buffer");
+          var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
+          const pixelmap = canvas.drawLayer.pixelmap;
+          console.log(pixelmap.width*pixelmap.height);
+          pixelmap.ReadFromBuffer(bufferArray, pixelmap.width, pixelmap.height, true);
         }
         else if(!settings.active) { console.log("Layer was not active"); }
         else {console.error("Layer did not have a buffer ready for us");}

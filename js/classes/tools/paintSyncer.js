@@ -1,3 +1,4 @@
+import { NetSyncer } from "../netSyncer";
 import { Stroke } from "./stroke";
 import { StrokePart } from "./strokePart";
 
@@ -32,6 +33,7 @@ export class PaintSyncer {
     LogBrushEnd(){
         if(this.strokes.length<1){return;}
         this.activeStroke.isActive = false;
+        NetSyncer.onStrokeEnd();
     }
     GetReadyStrokeParts(){
         var parts = [];
