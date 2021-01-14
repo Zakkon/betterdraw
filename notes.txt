@@ -1,0 +1,7 @@
+procedure:
+>create draw layer
+>create left controls (needs layer)
+>rebuild the grid with new gridsize
+>create and place the rendertexture for the layer
+
+DONT FORGET TO SET socket: true in MANIFEST.JSON!

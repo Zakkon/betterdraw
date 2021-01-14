@@ -1,0 +1,3 @@
+module that uses fantasynamegenerators to generate names, based on culture (greek, dnd dwarf, warcraft orc, etc)
+possibility of multiculturalism? (2+ cultures)
+possibility of pulling a firstname from one culture, and lastname from another

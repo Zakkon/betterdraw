@@ -1,0 +1,79 @@
+<form>
+    <!-- <h3>{{localize 'SIMPLEFOG.fogImageSettings'}}</h3>
+    <div class="form-group">
+        <label for="fogTextureFilePath">{{localize 'SIMPLEFOG.fogImage'}}</label>
+        <button type="button" class="file-picker" data-type="imagevideo" data-target="fogTextureFilePath" title="Browse Files" tabindex="-1">
+            <i class="fas fa-file-import fa-fw"></i>
+        </button>
+        <input class="image" type="text" name="fogTextureFilePath" value="{{ fogTextureFilePath }}" placeholder="{{localize 'SIMPLEFOG.fogImage'}}" data-dtype="String" />
+    </div>
+    <p class="notes">
+        {{ localize 'SIMPLEFOG.imageNotes' }}
+    </p>
+    <hr />
+    <h3 class="form-header"><i class="fas fa-crown"></i> {{localize 'SIMPLEFOG.gmFogSettings'}}</h3>
+    <div class="form-group">
+        <label for="gmTint">{{localize 'SIMPLEFOG.color'}}</label>
+        <input class="color" type="text" name="gmTint" value="{{ gmTint }}" data-dtype="String" />
+        <input type="color" value="{{ gmTint }}" data-edit="gmTint" />
+    </div>
+    <div class="form-group">
+        <label for="gmAlpha">{{localize 'SIMPLEFOG.opacity'}}</label>
+        <input type="range" name="gmAlpha" value="{{ gmAlpha }}" min="0" max="100" step="1" data-dtype="Number" />
+        <span class="range-value">{{ gmAlpha }}</span>
+    </div>
+    <hr />
+    <h3 class="form-header"><i class="fas fa-users"></i> {{localize 'SIMPLEFOG.playerFogSettings'}}</h3> -->
+    <p class="notes">{{localize "SCENES.BackgroundImageHint"}}</p>
+    <div class="form-group">
+        <label>{{localize "SCENES.BackgroundImage"}}</label>
+        <div class="form-fields">
+            {{filePicker target="img" type="imagevideo"}}
+            <input class="image" type="text" name="img" placeholder="{{localize 'File Path'}}" value="{{img}}"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>{{localize "SCENES.Dimensions"}} <span class="units">({{localize "SCENES.Pixels"}})</span></label>
+        <div class="form-fields">
+            <label class="grid-label">{{localize "Width"}}</label>
+            <input type="number" name="sceneWidth" placeholder="{{localize 'SCENES.Pixels'}}" value="{{sceneWidth}}"/>
+            <label class="grid-label">{{localize "Height"}}</label>
+            <input type="number" name="sceneHeight" placeholder="{{localize 'SCENES.Pixels'}}" value="{{sceneHeight}}"/>
+        </div>
+    </div>
+    <!-- <div class="form-group">
+        <label>{{localize "SCENES.GridType"}}</label>
+        <div class="form-fields">
+            <select name="gridType" data-dtype="Number">
+            {{#select entity.gridType}}
+            {{#each gridTypes as |label t|}}
+                <option value="{{t}}">{{localize label}}</option>
+            {{/each}}
+            {{/select}}
+            </select>
+            <button type="button" class="grid-config" title="{{ localize "SCENES.GridConfigTool" }}">
+                <i class="fas fa-ruler-combined"></i>
+            </button>
+        </div>
+    </div> -->
+    <div class="form-group">
+        <label>{{localize "SCENES.GridSize"}} <span class="units">({{localize "SCENES.Pixels"}})</span></label>
+        <div class="form-fields">
+            <input type="text" name="gridSize" placeholder="{{localize 'SCENES.Pixels'}}" value="{{ gridSize }}" data-dtype="Number"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="playerTint">Color</label>
+        <input class="color" type="text" name="backgroundColor" value="{{ backgroundColor }}" data-dtype="String" data-edit="backgroundColor" />
+        <input type="color" value="{{ backgroundColor }}" data-edit="backgroundColor" />
+    </div>
+    <footer class="sheet-footer flexrow">
+        <!-- <button type="submit" name="saveDefaults">
+            <i class="fas fa-save"></i> {{localize 'SIMPLEFOG.saveAsDef'}}
+        </button> -->
+        <button type="submit" name="submit">
+            <i class="fa fa-check"></i> {{localize 'SIMPLEFOG.ok'}}
+        </button>
+    </footer>
+</form>

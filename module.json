@@ -1,0 +1,24 @@
+{
+    "name": "betterdraw",
+    "title": "BetterDraw",
+    "description": "Drawing module",
+    "version": "0.0.1",
+    "author": "Zakkon",
+    "esmodules": [
+      "./dist/bundle.js"
+    ],
+    "styles": [
+      "css/brush-controls.css"
+    ],
+    "socket": true,
+    "languages": [
+      {
+        "lang": "en",
+        "name": "English",
+        "path": "lang/en.json"
+      }
+    ],
+    "minimumCoreVersion": "0.7.5",
+    "compatibleCoreVersion": "0.7.7"
+  }
+  
