@@ -17,6 +17,7 @@ export class NetSyncer {
     static onUpdateScene() {
         //The GM has the authorative version of the texture already, no need to fetch it from sceneflags
         if(NetSyncer.isMaster) { return; }
+        console.log("refresh texture");
         NetSyncer.refreshLayerTexture();
     }
     static async refreshLayerTexture() {
@@ -44,11 +45,11 @@ export class NetSyncer {
     /**
      * Called by the authorative client whenever a stroke has finished and its effects have been applied onto the pixelmap
      */
-    static onStrokeEnd() {
+    static async onStrokeEnd() {
         console.log("onStrokeEnd");
         if(!NetSyncer.isMaster) { return; }
         //Apply the pixelmap buffer to the scene flags
-        setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
+        await setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
         //Clients should now have onUpdateScene called
     }
 }

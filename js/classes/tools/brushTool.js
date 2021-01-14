@@ -39,7 +39,7 @@ export default class BrushTool extends DrawTool {
             
         }
         //Apply the pixels (renders the texture to the sprite)
-        if(parts.length>0) { pm.ApplyPixels(); NetSyncer.onStrokeEnd();}
+        if(parts.length>0) { pm.ApplyPixels(); }
         //canvas.drawLayer.update();
     }
 

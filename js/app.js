@@ -10,6 +10,7 @@ import { calcGridImportSize } from "./helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 import { NetSyncer } from "./classes/netSyncer.js";
+import BrushControls from "./classes/BrushControls.js";
 
 Hooks.once('canvasInit', () => {
     console.log("CANVASINIT_ONCE");
@@ -98,7 +99,6 @@ Hooks.on('updateUser', () => {
   console.log("UPDATEUSER");
 });
 Hooks.on('updateScene', () => {
-  console.log("UPDATESCENE");
   NetSyncer.onUpdateScene();
 });
 /**
