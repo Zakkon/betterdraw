@@ -6,12 +6,14 @@ procedure:
 
 --------
 SYNCING
--------
-Lazy Way, using scene flags:
+--------
+Lazy Way, relying on scene flags (functioning):
 >When layer is created, we put all the layer info (including texture buffer) in the scene flags
 >When clients join, they will already know the scene flags, and be able to reproduce the texture
 >GM will need to update the buffer at the end of every stroke, to keep the texture updated
 >clients will have their updateScene hook called, and use that fresh buffer to rebuild the texture
+Problems:
+setting scene flags is quite slow, and *will* cause framedrops when applying the buffer
 ------------------------
 Intermediate Way, using scene flags & socket messages:
 >Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
