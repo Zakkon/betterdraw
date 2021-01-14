@@ -51,14 +51,18 @@ function addToCanvasLayersArray(){
 
 Hooks.on("ready", async function() {
   console.log("READY");
-  //game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
+  //Set up our socket listener
+  game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
   //game.socket.emit('module.betterdraw', {event: "clientready", userid: [game.user.id]});
   //game.socket.emit("module.BetterDraw", {event: "testevent", eventdata: ["hey"]});
 
+  //Lets check the scene flags and see if any texture data is stored on there
   let settings = getSetting("drawlayerinfo");
   console.log(settings);
   if(settings.active && settings.hasBuffer) {
+    //The layer is active, and a buffer has been cached
     let buffer = getSetting("buffer");
+    //Load the layer on our client
     let e = await LayerSettings.LoadFromBuffer(settings, buffer);
     let task = new LoadAction();
     task.Perform(e);
@@ -70,19 +74,18 @@ function recieveNetMsg(data){
   console.log("MSG RECIEVED!");
   console.log(data);
   switch(data.event){
-    case "clientready":
+    case "clientready": //A new client has just connected/reloaded their scene
       if(game.user.isGM) { serverOnClientReady(data); }
       break;
     default: console.error("message event " + data.event + " is not recognized"); break;
   }
 }
+/**
+ * Called on the GM whenever a client has reloaded their scene
+ * @param {} data 
+ */
 function serverOnClientReady(data) {
-  //Check if we have any layers ready
-  //If not, return
-  console.log("layer.isSetup " + canvas.drawLayer.isSetup);
-  //Encode texture and send it to setFlag
-  //Then send message
-  setSetting("isLayerActive", true);
+  
 }
 Hooks.on('updateUser', () => {
   console.log("UPDATEUSER");
