@@ -63,9 +63,6 @@ Hooks.on("ready", async function() {
     let task = new LoadAction();
     task.Perform(e);
   }
-  //const settings = await LayerSettings.LoadFromSceneFlags();
-  //let task = new LoadAction();
-  //task.Perform(settings); //works
 
   //canvas.drawLayer.pixelmap.DrawRect(0,0,20,20, new Color32(0,0,255), true);
 });
