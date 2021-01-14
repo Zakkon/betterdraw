@@ -12,7 +12,8 @@ export default class LoadAction {
     }
 
   /**
-   * 
+   * Fills the DrawLayer with a texture, based on the settings.
+   * Rescales the grid and canvas if nessesary.
    * @param {LayerSettings} settings 
    */
     async Perform(settings) {

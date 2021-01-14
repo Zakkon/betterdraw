@@ -61,6 +61,12 @@ export class LayerSettings{
 
         return s;
     }
+    /**
+     * Prepare LayerSettings based on a pixel buffer array.
+     * texWidth & texHeight must be defined in the settings object.
+     * @param {} settings 
+     * @param {Uint8ClampedArray} buffer 
+     */
     static async LoadFromBuffer(settings, buffer) { //custom object
         var s = new LayerSettings();
         s.buffer = buffer;

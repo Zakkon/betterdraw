@@ -3,5 +3,12 @@ procedure:
 >create left controls (needs layer)
 >rebuild the grid with new gridsize
 >create and place the rendertexture for the layer
-
-DONT FORGET TO SET socket: true in MANIFEST.JSON!
+----------------------------------
+SYNCING
+----------------------------------
+VERSION ONE: Lazy Mode (functioning)
+>Texture is stored in scene flags upon the GM completing the "create new layer" dialog
+>Sceneflags keeps getting updated with the fresh texture each time the GM finishes drawing a stroke
+>Clients joining the session have immediate access to the sceneflags, and thus the texture
+>Clients detect changes to the scene flags with the updateScene hook, and can then refresh their displayed texture with the fresh texture data
+----------------------------------
