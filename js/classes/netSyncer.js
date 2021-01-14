@@ -27,11 +27,10 @@ export class NetSyncer {
         if(settings.active && settings.hasBuffer) {
           //The layer is active, and a buffer has been cached
           const buffer = getSetting("buffer");
-          console.log(buffer);
-          console.log(buffer.length/4);
+          var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
           const pixelmap = canvas.drawLayer.pixelmap;
           console.log(pixelmap.width*pixelmap.height);
-          pixelmap.ReadFromBuffer(buffer, pixelmap.width, pixelmap.height, true);
+          pixelmap.ReadFromBuffer(bufferArray, pixelmap.width, pixelmap.height, true);
         }
         else if(!settings.active) { console.log("Layer was not active"); }
         else {console.error("Layer did not have a buffer ready for us");}
@@ -49,7 +48,7 @@ export class NetSyncer {
         console.log("onStrokeEnd");
         if(!NetSyncer.isMaster) { return; }
         //Apply the pixelmap buffer to the scene flags
-        setSetting("buffer", [canvas.drawLayer.pixelmap.pixels]);
+        setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
         //Clients should now have onUpdateScene called
     }
 }

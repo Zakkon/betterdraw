@@ -43,7 +43,7 @@ export default class PixelMap {
         if(buffer.length != (bufferWidth*bufferHeight*4)){console.error("buffer is of the wrong size!"); return;}
         //We will essentially replace our pixel buffer with theirs
         this.pixels = buffer; //assume its a uin8clamped array, rgba32 format
-        if((this.width!=bufferWidth)||(this.height!=bufferHeight)) //See if this buffer is of a different size then our current one
+        if((this.width!==bufferWidth)||(this.height!==bufferHeight)) //See if this buffer is of a different size then our current one
         {
             this.width = bufferWidth; this.height = bufferHeight;
             //the texture needs to be resized

@@ -12,6 +12,9 @@ export class LayerSettings{
         this.sourceTexWidth = 0; //in pixels
         this.sourceTexHeight = 0; //in pixels
         this.buffer = []; //Contains texture pixel data
+        this.loadFromBuffer = false; //Should we load straight from the buffer instead of caring about a texture file somewhere?
+        this.bufferWidth = 0; //in pixels
+        this.bufferHeight = 0; //in pixels
         this.textureFilename = null; //includes extension
         this.backgroundColor = "#FFFFFF";
     }
@@ -61,6 +64,9 @@ export class LayerSettings{
     static async LoadFromBuffer(settings, buffer) { //custom object
         var s = new LayerSettings();
         s.buffer = buffer;
+        s.loadFromBuffer = true;
+        s.bufferWidth = settings.spriteW;
+        s.bufferHeight = settings.spriteH;
         s.desiredGridSize = settings.desiredGridSize;
         //scene width & height
         s.sceneWidth = settings.sceneWidth;
@@ -94,4 +100,5 @@ export class LayerSettings{
         }
        
     }
+    static bufferToUint8ClampedArray(buffer){return Uint8ClampedArray.from({...buffer, length: Object.keys(buffer).length });}
 }

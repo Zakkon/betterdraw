@@ -78,37 +78,39 @@ export default class LoadAction {
         */
 
         if(didRescale) {
-            console.log("Pixelmap texture: ");
-            console.log(pm.texture);
             layer.init();
         }
 
         if(settings.hasSourceTexture)
         {
+            
             const presampleTexture = false;
             if(!presampleTexture){ //Option A
                 //We want the pixelmap to just cache the texture as it is
                 pm.ReadFromBuffer(settings.buffer, settings.sourceTexWidth, settings.sourceTexHeight, true);
+                console.log("Loaded source texture straight from buffer");
             }
             else{ //Option B
                 //We want the pixelmap to rescale the texture and cache that
                 pm.ReadFromBuffer_Scaled(settings.buffer, settings.sourceTexWidth, settings.sourceTexHeight, ts.w, ts.h, true);
+                console.log("Loaded source texture and scaled it to fit our layer");
             }
         }
+        else if(settings.loadFromBuffer){
+            pm.ReadFromBuffer(settings.buffer, settings.bufferWidth, settings.bufferHeight, true);
+            console.log("Loaded source texture straight from buffer");
+        }
         else {
+            console.log("No source texture was defined, filling it in with the background color instead");
             if(settings.backgroundColor===null||settings.backgroundColor===undefined)
-            { settings.backgroundColor = "#ffffff"; }
+            { settings.backgroundColor = "#ffffff"; console.log("Filled in with default background color, since no backgroundcolor was defined");}
             const col = hexToColor(webToHex(settings.backgroundColor));
             pm.Reform(500,500, col, true);
         }
 
         //The actual rendered sprite object (PIXI.Sprite) needs to be rescaled to match the canvas
         //Strangely enough, a correctly scaled sprite appears 50% too big in relation to the grid, therefore we need to scale it down to 66.6%
-        console.log("Layer.layer: ");
-        console.log(layer.layer);
-        console.log("Layer: ");
-        console.log(layer);
-        console.log(ts);
+        
         //layer.layer.width = ts.w * (2/3);
         //layer.layer.height = ts.h * (2/3);
         
@@ -135,7 +137,7 @@ export default class LoadAction {
         layer.isSetup = true;
 
         if(!game.user.isGM) { return; }
-        setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true});
+        setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true, spriteW: pm.width, spriteH: pm.height});
         setSetting("buffer", layer.pixelmap.pixels); 
     }
 
@@ -160,7 +162,7 @@ export default class LoadAction {
             didRescale = true;
             this._preRescale();
             LoadAction.IsUpdating = true;
-            console.log("Rescaling grid to " + pixelsPerGrid + "px");
+            console.log("Rescaling grid to " + pixelsPerGrid + "px...");
             //'width: value' will change scene dimension width
             await curScene.update({grid: pixelsPerGrid, width:pixelsPerGrid*sceneInGrids, height:pixelsPerGrid*sceneInGrids});
             LoadAction.IsUpdating = false;
