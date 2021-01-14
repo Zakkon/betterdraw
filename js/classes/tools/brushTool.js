@@ -4,6 +4,7 @@ import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
 import { PaintSyncer } from "./paintSyncer";
+import { NetSyncer } from "../netSyncer";
 
 export default class BrushTool extends DrawTool {
     

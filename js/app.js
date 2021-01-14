@@ -12,6 +12,7 @@ import CreateLayerDialog from '../simplefog/classes/CreateLayerDialog.js';
 import { calcGridImportSize } from "../simplefog/helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
+import { NetSyncer } from "./classes/netSyncer.js";
 
 Hooks.once('canvasInit', () => {
     console.log("CANVASINIT_ONCE");
@@ -51,6 +52,7 @@ function addToCanvasLayersArray(){
 
 Hooks.on("ready", async function() {
   console.log("READY");
+  NetSyncer.onReady();
   //Set up our socket listener
   game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
   //game.socket.emit('module.betterdraw', {event: "clientready", userid: [game.user.id]});
@@ -92,7 +94,7 @@ Hooks.on('updateUser', () => {
 });
 Hooks.on('updateScene', () => {
   console.log("UPDATESCENE");
-  
+  NetSyncer.onUpdateScene();
 });
 /**
  * Add control buttons

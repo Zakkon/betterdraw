@@ -51,9 +51,14 @@ export default class LoadAction {
         //Rescale the grid if needed
         const sceneInGrids = 50;
         let curScene = game.scenes.get(canvas.scene.data._id);
-        
         console.log(curScene.data);
-        const didRescale = await this._rescaleWorld(gridData.pixelsPerGrid, sceneInGrids);
+        let didRescale = false;
+        if(game.user.isGM) //clients dont need to rescale the scene, this is only nessesary when the GM creates the initial layer object
+        {
+            didRescale = await this._rescaleWorld(gridData.pixelsPerGrid, sceneInGrids);
+        }
+        
+        
         
         //Read the texture from the buffer, and scale it if nessesary
         const ts = gridData.texSize;
@@ -109,6 +114,7 @@ export default class LoadAction {
         
 
         //Bug/problem: the scene adds padding ontop of the scene dimensions we provided. We need to take that into account when we position our sprite
+        
 
         //Problem: when the scene resizes, our sprite may not line up correctly. TEST THIS!
         layer.draw(); //Might need to move this to after our pos & size changes
@@ -118,17 +124,19 @@ export default class LoadAction {
         layer.layer.height = 50*gridData.pixelsPerGrid;//pm.height; //* ((7/40) * sceneInGrids);
         layer.layer.x = curScene.data.padding * (sceneInGrids * gridData.pixelsPerGrid);
         layer.layer.y = curScene.data.padding * (sceneInGrids * gridData.pixelsPerGrid);
-
         layer.SetVisible(true);
+        
 
         //What settings to we want to save in the scene?
         //image name, so we can find the image file later
         //the desired grid size (pixels per grid)
         //source texture size (its saved in the texture itself)
         
+        layer.isSetup = true;
+
+        if(!game.user.isGM) { return; }
         setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true});
         setSetting("buffer", layer.pixelmap.pixels); 
-        layer.isSetup = true;
     }
 
 
