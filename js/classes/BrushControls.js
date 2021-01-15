@@ -25,10 +25,14 @@ export default class BrushControls extends FormApplication {
    */
   getData() {
     // Return data to the template
+    let color = getUserSetting('brushColor');
+    let size = getUserSetting('brushSize');
+    if(!color){color = "#ff0000"; setUserSetting('brushColor', color); }
+    if(!size){size = 1; setUserSetting('brushSize', size);}
     return {
-      brushSize: getUserSetting('brushSize'),
+      brushSize: size,
       brushOpacity: 1,//hexToPercent(canvas.drawLayer.getUserSetting('brushOpacity')),
-      brushColor: getUserSetting('brushColor'),
+      brushColor: color,
     };
   }
 
@@ -48,9 +52,20 @@ export default class BrushControls extends FormApplication {
    * @private
    */
   async _updateObject(event, formData) {
+
     setUserSetting('brushSize', formData.brushSize);
     await setUserSetting('brushOpacity', percentToHex(formData.brushOpacity));
     setUserSetting('brushColor', formData.brushColor);
     canvas.drawLayer.setPreviewTint();
+
+    if (event.submitter && event.submitter.name === 'submit') {
+      console.log("submit");
+      console.log(this.form);
+      
+    let s = $("#myDropdown");
+    console.log(s);
+      //this.form.getElementById("myDropdown").classList.toggle("show");
+    }
+
   }
 }

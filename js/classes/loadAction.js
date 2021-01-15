@@ -139,7 +139,7 @@ export default class LoadAction {
 
         if(!game.user.isGM) { return; }
         setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true, spriteW: pm.width, spriteH: pm.height});
-        setSetting("buffer", layer.pixelmap.pixels); 
+        //setSetting("buffer", layer.pixelmap.pixels); 
     }
 
 

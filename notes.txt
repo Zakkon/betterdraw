@@ -15,8 +15,18 @@ Lazy Way, relying on scene flags (deprecated):
 Problems:
 setting scene flags is quite slow, and *will* cause framedrops when applying the buffer
 ------------------------
-Intermediate Way, using scene flags & socket messages (functioning):
+Intermediate Way, using scene flags & socket messages (deprecated):
 >Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
 >clients recieving the StrokeParts can replicate the drawing in realtime on their texture
 >the StrokeParts needs a timestamp, which is compared to the timestamp of the most recent scene flags update, stored in the scene flags itself
 >if the scene flags update is more recent then the StrokePart, that means the StrokePart is outdated and we can simply use the buffer within the scene flags instead
+-----------------------
+NEW DEVELOPMENT, SCENE FLAGS CANNOT BE USED
+Storing the texture buffer in sceneFlags causes tremendous lag when moving characters around on the map
+-----------------------
+Using an image file instead of scene flags (in development)
+>Non-GM client can load a texture straight from the server and render that onto the layer object
+>GM handles saving/updating that image file when it deems nessesary
+>GM will cache StrokeParts in the scene flags
+>When the GM finally updates the image file, all StrokeParts are also deleted, since they are out of date. Clients then load from the image file
+-----------------------

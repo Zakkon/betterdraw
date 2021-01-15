@@ -1,8 +1,3 @@
-/**
- * Converts a hexadecimal color to an integer percentage
- * @param n {Hex}               Base 16 Color, f.x. 0x000000
- * @return {Integer}             f.x 0
- */
 export function getSetting(name) {
     let setting = canvas.scene.getFlag("betterdraw", name);
     if (setting === undefined) setting = getUserSetting(name);
@@ -10,6 +5,8 @@ export function getSetting(name) {
     return setting;
 }
 export async function setSetting(name, value) {
+    if(value===null){console.error("Clear scene setting " + name);}
+    else{ console.error("Set scene setting " + name); }
     const v = await canvas.scene.setFlag("betterdraw", name, value);
     return v;
 }

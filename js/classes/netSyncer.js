@@ -1,7 +1,10 @@
 import { setSetting, getSetting } from "../settings";
+import { savePNG } from "../classes/serializiation/saveload.js";
 import { LayerSettings } from "./layerSettings";
 import LoadAction from "./loadAction";
 import { StrokePart } from "./tools/strokePart";
+import { Stroke } from "./tools/stroke";
+var pixels = require('image-pixels');
 
 export class NetSyncer {
 //Assumes there is only one GM in the session, and that he is authorative when it comes to drawing
@@ -10,7 +13,11 @@ export class NetSyncer {
      * Called from the isMaster hook in Foundry
      */
     static onReady() {
-        if(!NetSyncer.isMaster){game.socket.emit('module.betterdraw', {event: "onClientJoin"});}
+        if(!NetSyncer.isMaster)
+        {
+            console.log("Telling GM that I just joined...");
+            game.socket.emit('module.betterdraw', {event: "onClientJoin"});
+        }
     }
     /**
      * Called from the updateScene hook in Foundry
@@ -40,10 +47,25 @@ export class NetSyncer {
     /**
      * Called from the socket whenever a client in the session has loaded/reloaded their scene
      */
-    static onClientJoin() {
+    static async onClientJoin() {
         if(!NetSyncer.isMaster) { return; }
-        //We might want to set scene flags here, in order to give the client the full texture
-        this.updateSceneFlags();
+        /* console.log("Recieving texture request from client. Saving texture to file...");
+        //Save the pixelmap to an image file, then send a message to the clients telling them to read from the image file
+        let buffer = canvas.drawLayer.pixelmap.texture.encodeToPNG();
+        await savePNG(buffer, "image.png", "betterdraw/uploaded");
+        console.log("Sending texturerefreshed event...");
+        game.socket.emit('module.betterdraw', {event: "texturerefreshed", imgname: "image.png"}); */
+
+        //Send all past strokes to client
+    }
+    static async onRecieveTexture(){
+        if(NetSyncer.isMaster) { return; }
+        console.log("Recieved notice that image file has been refreshed. Loading image file...");
+        var a = await NetSyncer.loadImageFile();
+        let settings = getSetting("drawlayerinfo");
+        let e = await LayerSettings.LoadFromBuffer(settings, a.buffer);
+        let task = new LoadAction();
+        task.Perform(e);
     }
     /**
      * Called by the authorative client whenever a stroke has finished and its effects have been applied onto the pixelmap
@@ -76,5 +98,61 @@ export class NetSyncer {
         //Tell the pixelmap to draw according to these instructions
         //Todo: make a timestamp comparison, to make sure we arent drawing out-of-date instructions
         canvas.drawLayer.pixelmap.DrawStrokeParts(parts);
+    }
+
+    static async loadImageFile() {
+        var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
+        //console.log(data);
+        return {buffer: data, width: width, height: height};
+    }
+    /**
+     * 
+     * @param {Stroke[]} stroke 
+     */
+    static LogPastStrokes(strokes)
+    {
+        if(!NetSyncer.isMaster){return;}
+        let strokeHistory = getSetting("strokes"); //Array of Strokes
+        if(!strokeHistory) { strokeHistory = []; } //Create new array if none exists
+
+        let a = [];
+        for(let i = 0; i < strokeHistory.length; ++i)
+        {a.push(strokeHistory[i]);}
+        for(let i = 0; i < strokes.length; ++i)
+        {
+            const encoded = this._encodeStroke(strokes[i]);
+            a.push(encoded);
+        }
+
+        setSetting("strokes", a);
+    }
+    /**
+     * 
+     * @param {Stroke} stroke 
+     */
+    static _encodeStroke(stroke){
+        //assume circle for now
+        let o = {};
+        o.brushSize = stroke.brushSize;
+        o.color = stroke.color;
+        o.xyCoords = stroke.xyCoords;
+        o.cellBased = stroke.cellBased;
+        return o;
+    }
+    static _decodeStroke(data){
+        let s = new Stroke(data.brushSize, data.color, data.cellBased);
+        s.xyCoords = data.xyCoords;
+        return s;
+    }
+    /**
+     * 
+     * @param {any[]} sceneFlagStrokeHistory 
+     */
+    static DecodeStrokes(sceneFlagStrokeHistory){
+        let a = [];
+        for(let i = 0; i < sceneFlagStrokeHistory.length; ++i){
+            a.push(this._decodeStroke(sceneFlagStrokeHistory[i]));       
+        }
+        return a;
     }
 }

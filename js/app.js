@@ -1,4 +1,3 @@
-import { buffer } from "d3";
 import Color32 from "./classes/color32.js";
 import LoadAction from "./classes/loadAction.js";
 import DrawLayer from "./classes/drawlayer.js";
@@ -11,6 +10,7 @@ import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 import { NetSyncer } from "./classes/netSyncer.js";
 import BrushControls from "./classes/BrushControls.js";
+import CreateLayerDialog from "./classes/CreateLayerDialog.js";
 
 Hooks.once('canvasInit', () => {
     console.log("CANVASINIT_ONCE");
@@ -49,23 +49,34 @@ function addToCanvasLayersArray(){
 }
 
 Hooks.on("ready", async function() {
-  console.log("READY");
+  //await setSetting("strokes", null);
   NetSyncer.onReady();
   //Set up our socket listener
   game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
   //game.socket.emit('module.betterdraw', {event: "clientready", userid: [game.user.id]});
   //game.socket.emit("module.BetterDraw", {event: "testevent", eventdata: ["hey"]});
 
-  await loadFromSceneFlags();
+  //await loadFromSceneFlags();
+
+  await tryGet3(); //Load the image file to use as a background
+  //Any strokes made after this texture was last saved will be drawn ontop
+
+
+  let strokeHistory = await getSetting("strokes");
+  if(!strokeHistory){return;}
+  let strokes = NetSyncer.DecodeStrokes(strokeHistory);
+  //Draw the strokes onto the pixelmap
+  canvas.drawLayer.pixelmap.DrawStrokes(strokes, true);
 });
 async function loadFromSceneFlags() {
   //Lets check the scene flags and see if any texture data is stored on there
   let settings = getSetting("drawlayerinfo");
   console.log(settings);
-  if(settings===undefined){return;}
+  if(!settings){return;}
   if(settings.active && settings.hasBuffer) {
     //The layer is active, and a buffer has been cached
     let buffer = getSetting("buffer");
+    if(!buffer){return;}
     //There's a problem, we get the buffer in a strange non-array format, and we need to fix that
     var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
     if(bufferArray.length!=settings.spriteW*settings.spriteH*4){console.error("Buffer does not match its specified size!"); return; }
@@ -77,10 +88,11 @@ async function loadFromSceneFlags() {
   else {
 
   }
+  await setSetting("buffer", null); //Debug
 }
 function recieveNetMsg(data){
-  console.log("MSG RECIEVED!");
-  console.log(data);
+  //console.log("MSG RECIEVED!");
+  //console.log(data);
   switch(data.event){
     case "onClientJoin": //A new client has just connected/reloaded their scene
       if(game.user.isGM) { NetSyncer.onClientJoin(); }
@@ -88,6 +100,7 @@ function recieveNetMsg(data){
     case "strokeparts":
       NetSyncer.onStrokePartsRecieved(data.parts);
       break;
+    case "texturerefreshed": NetSyncer.onRecieveTexture(); break;
     default: console.error("message event " + data.event + " is not recognized"); break;
   }
 }
@@ -204,3 +217,73 @@ function setBrushControlPos() {
 // Reset position when brush controls are rendered or sceneNavigation changes
 Hooks.on('renderBrushControls', setBrushControlPos);
 Hooks.on('renderSceneNavigation', setBrushControlPos);
+
+
+function tryUpload(file) {
+  var source = "data";
+  let response;
+  if (file.isExternalUrl) { response = {path: file.url}}
+  else { response = FilePicker.upload(source, "basic-paint/uploaded", file, {}); }
+  console.log(response);
+}
+/* function tryDownload(){
+  var buffer;
+  let promise = new Promise(function(resolve, reject) {
+      let response = await fetch('/basic-paint/uploaded/image.png');
+      let blob = await response.blob();
+      console.log(blob);
+      buffer = await new Response(blob).arrayBuffer();
+      console.log(buffer);
+      resolve("done");
+    });
+    promise.then(
+      result => applyToDrawLayer(buffer, 400, 400),
+      error => console.log(error)
+    );
+  /* (async() => {
+      
+      //Apply that to the drawLayer
+      applyToDrawLayer(buffer, 400, 400);
+  })(); */
+/*}*/ 
+function tryget(callback) {
+  const a = () => new Promise( resolve => {
+      var allo = 123;
+      (async() => {
+      let response = await fetch('/betterdraw/uploaded/image.png');
+      let blob = await response.blob();
+      let buffer = await new Response(blob).arrayBuffer();
+      setTimeout( () => resolve( buffer ), 1000 ); // 1s delay
+      })();
+  } );
+  a().then( ( result ) => {
+      console.log( 'a() success:', result );
+      applyToDrawLayer(result, 400,400);
+  });
+}
+function tryGet2(){
+  
+  const container = new PIXI.Container();
+  canvas.app.stage.addChild(container);
+
+  const texture = PIXI.Texture.from('/betterdraw/uploaded/image.png');
+  var rt = canvas.drawLayer.maskTexture;
+  const sprite = new PIXI.Sprite(rt);
+  sprite.x = 450;
+  sprite.y = 60;
+  canvas.app.stage.addChild(sprite);
+  canvas.app.renderer.render(container, rt);
+}
+async function tryGet3(){
+  var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
+  console.log(data);
+  console.log(width + " x " + height);
+
+  //applyToDrawLayer(data, width, height);
+  let settings = getSetting("drawlayerinfo");
+  console.log(settings);
+  let e = await LayerSettings.LoadFromBuffer(settings, data);
+  let task = new LoadAction();
+  task.Perform(e);
+  await setSetting("buffer", null); //Debug
+}

@@ -46,14 +46,14 @@ export function saveLayer(layerObj, path){
     const buffer = pixelmap.texture.encodeToPNG();
     savePNG(buffer, "dungeon.png", "betterdraw/uploaded");
 }
-function savePNG(buffer, fileName, path){
+export async function savePNG(buffer, fileName, path){
     const file = new File([buffer], fileName, {type: "image/png"});
-    saveInData(file, path);
+    await saveInData(file, path);
 }
-function saveInData(file, localPath) { //localPath can be like: 'betterdraw/uploaded'
+async function saveInData(file, localPath) { //localPath can be like: 'betterdraw/uploaded'
     var source = "data";
     let response;
     if (file.isExternalUrl) { response = {path: file.url}}
-    else { response = FilePicker.upload(source, localPath, file, {}); }
+    else { response = await FilePicker.upload(source, localPath, file, {}); }
     console.log(response);
 }
