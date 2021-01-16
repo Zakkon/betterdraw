@@ -30,3 +30,20 @@ Using an image file instead of scene flags (in development)
 >GM will cache StrokeParts in the scene flags
 >When the GM finally updates the image file, all StrokeParts are also deleted, since they are out of date. Clients then load from the image file
 -----------------------
+SCENE STARTUP BUGS:
+-----------------
+FROM NOSCENE +F5 TO NEW SCENE:
+>Detects pixelmap texture is gone, thats ok.
+>Reaches config screen, all good so far
+>Save config screen changes, scene.update is called, then CanvasInit_on. Lag starts here due to LayerSettings.Save
+>In CanvasInit_on, we detect that the pixelmap is once again gone, and the drawlayer.layer aswell. so we recreate those
+>After create new drawlayer screen, loadaction is called which rescales the scene, calling scene.update
+>Loadaction then calls .init on drawlayer, which sees that the pixelmap texture and drawlayer.layer are once again destroyed, so we recreate those
+>Foundry then draws the scene, CanvasInit_on is called
+>In CanvasInit_on, we see that the pixelmap texture is ONCE AGAIN destroyed, so we rebuild it. drawlayer.layer seems to have survived
+>rendertexture seems completely blank
+---------------
+we need to figure out what to do in all of the hooks
+CANVASINIT_ON:
+>Pixelmap.texture (a rendertexture) is almost certainly destroyed and needs repairing + buffer added
+

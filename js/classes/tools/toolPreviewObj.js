@@ -62,7 +62,8 @@ export default class ToolPreviewObj extends PIXI.Graphics {
     setActive(active){
         this.visible = active;
     }
-    destroy(){
+    destroy() {
+      if(this===null||this===undefined||this.r===undefined){return;}
       super.destroy(true);
     }
 }

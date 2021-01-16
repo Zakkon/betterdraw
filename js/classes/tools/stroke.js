@@ -3,12 +3,13 @@ import Color32 from "../color32";
 export class Stroke {
 
     /**
-     * 
+     * @param {string} type
      * @param {number} brushSize 
      * @param {Color32} color 
      * @param {boolean} cellBased 
      */
-    constructor(brushSize, color, cellBased){
+    constructor(type, brushSize, color, cellBased){
+        this.type = type;
         this.brushSize = brushSize;
         this.color = color;
         this.cellBased = cellBased;
@@ -35,4 +36,11 @@ export class Stroke {
         return steps;
     }
     get isEmpty(){ return this.xyCoords.length<1 || this.parseIndex >= this.xyCoords.length; }
+}
+export class RectStroke {
+    constructor(type, brushSize, color, cellBased, fromX, fromY, width, height) {
+        this.width = width;
+        this.height = height;
+    }
+    get isEmpty() { return this.width<1 || this.height<1;}
 }

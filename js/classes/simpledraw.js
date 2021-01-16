@@ -37,8 +37,12 @@ export default class SimpleDrawLayer extends DrawLayer {
     }
     async init(){
         super.init();
+        this.isSetup = false;
     }
-
+    /**
+     * 
+     * @param {string} tool 
+     */
     setActiveTool(tool) { //string
         ToolsHandler.singleton.setActiveTool(tool);
         return;
@@ -153,18 +157,25 @@ export default class SimpleDrawLayer extends DrawLayer {
      * Mouse handlers for canvas layer interactions
      */
     _pointerDown(e) {
+        if(!this.layer.visible){return;}
         // Don't allow new action if history push still in progress
         if (this.history.historyBuffer.length > 0) return;
         // On left mouse button
         if (e.data.button === 0) {
             const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.app.stage);
+            
+            console.log(p);
+            console.log(canvas.drawLayer);
+            let r = canvas.dimensions.sceneRect;
+            let p2 = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
+            console.log(p2);
             // Round positions to nearest pixel
             p.x = Math.round(p.x);
             p.y = Math.round(p.y);
             this.op = true;
             // Check active tool
             const curTool = ToolsHandler.singleton.curTool;
-            curTool.onPointerDown(p, e);
+            curTool.onPointerDown(p2, e);
             // Call _pointermove so single click will still draw brush if mouse does not move
             this._pointerMove(e);
         }
@@ -177,8 +188,12 @@ export default class SimpleDrawLayer extends DrawLayer {
         }
     }
     _pointerMove(e) {
+        if(!this.isSetup){return;}
         // Get mouse position translated to canvas coords;
-        const p = e.data.getLocalPosition(canvas.drawLayer.layer);//canvas.drawLayer //canvas.app.stage);
+        const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.drawLayer //canvas.app.stage);
+        let r = canvas.dimensions.sceneRect;
+            let p2 = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
+
         // Round positions to nearest pixel
         //p.x = Math.round(p.x);
         //p.y = Math.round(p.y);
@@ -190,10 +205,12 @@ export default class SimpleDrawLayer extends DrawLayer {
         curTool.onPointerMove(p, e);
     }
     _pointerUp(e) {
+        if(!this.layer.visible){return;}
     // Only react to left mouse button
         if (e.data.button === 0) {
             // Translate click to canvas position
             const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.app.stage);
+            
             // Round positions to nearest pixel
             p.x = Math.round(p.x);
             p.y = Math.round(p.y);

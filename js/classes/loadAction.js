@@ -1,4 +1,5 @@
 var pixels = require('image-pixels');
+import { data } from "jquery";
 import { calcGridImportSize, hexToColor, webToHex } from "../helpers.js";
 import { getSetting, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
@@ -17,7 +18,7 @@ export default class LoadAction {
    * @param {LayerSettings} settings 
    */
     async Perform(settings) {
-        console.log(settings);
+        //console.log(settings);
         console.log("PERFORMING ACTION!");
 
 
@@ -44,7 +45,7 @@ export default class LoadAction {
 
         //Calculate what size the grid and texture should be
         let desiredGridSize = settings.desiredGridSize;//50 + Math.floor(Math.random() * 150);
-        const gridData = calcGridImportSize(desiredGridSize, settings.hasSourceTexture? settings.sourceTexWidth: desiredGridSize*10, settings.hasSourceTexture? settings.sourceTexHeight: desiredGridSize*10);
+        const gridData = calcGridImportSize(desiredGridSize, settings.sourceTexWidth, settings.sourceTexHeight);
 
         //lets figure out some good scene dimensions, based on grid
         console.log(gridData);
@@ -79,7 +80,7 @@ export default class LoadAction {
         */
 
         if(didRescale) {
-            layer.init();
+            await layer.init();
         }
 
         if(settings.hasSourceTexture)
@@ -104,7 +105,7 @@ export default class LoadAction {
         else {
             console.log("No source texture was defined, filling it in with the background color instead");
             if(settings.backgroundColor===null||settings.backgroundColor===undefined)
-            { settings.backgroundColor = "#ffffff"; console.log("Filled in with default background color, since no backgroundcolor was defined");}
+            { settings.backgroundColor = "#ff00ff"; console.log("Filled in with default background color, since no backgroundcolor was defined");}
             const col = hexToColor(webToHex(settings.backgroundColor));
             pm.Reform(500,500, col, true);
         }
@@ -120,22 +121,24 @@ export default class LoadAction {
         
 
         //Problem: when the scene resizes, our sprite may not line up correctly. TEST THIS!
-        layer.draw(); //Might need to move this to after our pos & size changes
-        layer.scale.x = 1; layer.scale.y = 1; //Make sure our layer object doesnt have any scaling
-        //Then position the sprite and stretch it correctly
-        layer.layer.width = 50*gridData.pixelsPerGrid;//pm.width; //* ((7/40) * sceneInGrids);
-        layer.layer.height = 50*gridData.pixelsPerGrid;//pm.height; //* ((7/40) * sceneInGrids);
-        layer.layer.x = curScene.data.padding * (sceneInGrids * gridData.pixelsPerGrid);
-        layer.layer.y = curScene.data.padding * (sceneInGrids * gridData.pixelsPerGrid);
-        layer.SetVisible(true);
         
+        
+        //Then position the sprite and stretch it correctly
+        if(layer.layer===undefined){console.error("drawLayer.layer is undefined! What is going on?");}
+        
+        layer.SetVisible(true);
+       
+        layer.reposition();
 
         //What settings to we want to save in the scene?
         //image name, so we can find the image file later
         //the desired grid size (pixels per grid)
         //source texture size (its saved in the texture itself)
         
+
+
         layer.isSetup = true;
+        console.log("set isSetup true");
 
         if(!game.user.isGM) { return; }
         setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true, spriteW: pm.width, spriteH: pm.height});
@@ -167,6 +170,7 @@ export default class LoadAction {
             //'width: value' will change scene dimension width
             await curScene.update({grid: pixelsPerGrid, width:pixelsPerGrid*sceneInGrids, height:pixelsPerGrid*sceneInGrids});
             LoadAction.IsUpdating = false;
+            console.log("Rescale complete");
             return true;
         }
         return false;
@@ -174,8 +178,16 @@ export default class LoadAction {
 
     _preRescale(){
         ToolsHandler.singleton.destroyToolPreviews();
+        console.log("layer: ");
+        var l = canvas.drawLayer.layer;
+        console.log(l);
+        console.log(l._destroyed);
+        if(l===null||l._destroyed){
+            console.error("drawLayer.layer is destroyed?");
+        }
         canvas.drawLayer.layer.destroy(true);
         canvas.drawLayer.layer = undefined;
+       
         canvas.drawLayer.pixelmap.recreateTexture();
     }
     

@@ -97,7 +97,7 @@ export default class CreateLayerDialog extends FormApplication {
     var task = new LoadAction();
     await task.Perform(s);
 
-    LayerSettings.SaveLayer();
+    //LayerSettings.SaveLayer();
   }
   onOptionsFaulty(options){
     //Close UI

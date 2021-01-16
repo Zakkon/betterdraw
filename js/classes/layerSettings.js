@@ -52,6 +52,8 @@ export class LayerSettings{
         }
         else {
             s = new LayerSettings();
+            s.sourceTexWidth = settings.sceneWidth/settings.desiredGridSize;
+            s.sourceTexHeight = settings.sceneHeight/settings.desiredGridSize;
         }
         s.desiredGridSize = settings.desiredGridSize;
         //scene width & height

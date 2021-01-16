@@ -23,17 +23,22 @@ Hooks.once('canvasInit', () => {
     canvas.drawLayer = canvas.stage.addChildAt(new SimpleDrawLayer("DrawLayer"), layerct);
     canvas.drawLayer.draw(); //This has to be called straight away, it basically initializes the CanvasLayer that is the core of SimpleDrawLayer
 });
-Hooks.on("canvasInit", function() {
+Hooks.on("canvasInit", async function() {
     console.log("CANVASINIT_ON");
     //This function can be called on things like world grid rescale, so expect this to be called more then once
 
     //This creates a sprite inside the drawLayer, but hides it for now
-    canvas.drawLayer.init();
+    await canvas.drawLayer.init();
     addToCanvasLayersArray(); //We need to call this so the game can find our drawLayer in some core functions
-
+    canvas.drawLayer.SetVisible(true);
+    await sleep(100); //Need to sleep here to ensure that layer is properly positioned
+    canvas.drawLayer.reposition(); canvas.drawLayer.layer.texture = canvas.drawLayer.pixelmap.texture;
     //Create the preview objects for the different brushes. They will live inside drawLayer.
     ToolsHandler.singleton.createToolPreviews(canvas.drawLayer);
+    canvas.drawLayer.isSetup = true;
     
+    console.log("DrawRect");
+    canvas.drawLayer.pixelmap.DrawRect(0,0,50,50, new Color32(255,0,255,255), true);
 });
 function addToCanvasLayersArray(){
     //Call this from Hooks.on("canvasInit")
@@ -47,7 +52,9 @@ function addToCanvasLayersArray(){
         return theLayers
     }});
 }
-
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 Hooks.on("ready", async function() {
   //await setSetting("strokes", null);
   NetSyncer.onReady();
@@ -58,6 +65,10 @@ Hooks.on("ready", async function() {
 
   //await loadFromSceneFlags();
 
+  /* console.log("SCENE:");
+  console.log(canvas.scene);
+  if(canvas.scene===null){return;}
+  canvas.drawLayer.SetVisible(true);
   await tryGet3(); //Load the image file to use as a background
   //Any strokes made after this texture was last saved will be drawn ontop
 
@@ -66,7 +77,7 @@ Hooks.on("ready", async function() {
   if(!strokeHistory){return;}
   let strokes = NetSyncer.DecodeStrokes(strokeHistory);
   //Draw the strokes onto the pixelmap
-  canvas.drawLayer.pixelmap.DrawStrokes(strokes, true);
+  canvas.drawLayer.pixelmap.DrawStrokes(strokes, true); */
 });
 async function loadFromSceneFlags() {
   //Lets check the scene flags and see if any texture data is stored on there
@@ -186,13 +197,13 @@ Hooks.on('renderSceneControls', (controls) => {
       if (!$('#simplefog-brush-controls').length) new BrushControls().render(true);
       // Set active tool
       const tool = controls.controls.find((control) => control.name === 'DrawLayer').activeTool; //get type of tool from controlBtn
-      console.log(tool);
       canvas.drawLayer.setActiveTool(tool);
     }
     // Switching away from layer
     else {
       //console.log("Leaving layer");
-      ToolsHandler.singleton.clearActiveTool();
+      if(ToolsHandler.singleton){ToolsHandler.singleton.clearActiveTool();}
+      
 
       // Remove brush tools if open
       const bc = $('#simplefog-brush-controls');
@@ -274,16 +285,17 @@ function tryGet2(){
   canvas.app.stage.addChild(sprite);
   canvas.app.renderer.render(container, rt);
 }
-async function tryGet3(){
+async function tryGet3() {
   var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
-  console.log(data);
+  //console.log(data);
   console.log(width + " x " + height);
 
   //applyToDrawLayer(data, width, height);
   let settings = getSetting("drawlayerinfo");
-  console.log(settings);
+  //console.log(settings);
+  if(!settings){settings = {spriteW: width, spriteH: height, desiredGridSize: 1}};
   let e = await LayerSettings.LoadFromBuffer(settings, data);
   let task = new LoadAction();
-  task.Perform(e);
+  await task.Perform(e);
   await setSetting("buffer", null); //Debug
 }

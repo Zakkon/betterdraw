@@ -120,8 +120,8 @@ export class NetSyncer {
         {a.push(strokeHistory[i]);}
         for(let i = 0; i < strokes.length; ++i)
         {
-            const encoded = this._encodeStroke(strokes[i]);
-            a.push(encoded);
+            //const encoded = this._encodeStroke(strokes[i]);
+            a.push(strokes[i]);
         }
 
         setSetting("strokes", a);
@@ -151,7 +151,8 @@ export class NetSyncer {
     static DecodeStrokes(sceneFlagStrokeHistory){
         let a = [];
         for(let i = 0; i < sceneFlagStrokeHistory.length; ++i){
-            a.push(this._decodeStroke(sceneFlagStrokeHistory[i]));       
+            //a.push(this._decodeStroke(sceneFlagStrokeHistory[i]));    
+            a.push(sceneFlagStrokeHistory[i]);   
         }
         return a;
     }

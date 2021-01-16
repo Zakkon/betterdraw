@@ -30,14 +30,36 @@ export default class DrawLayer extends CanvasLayer {
     get name(){return this.layername;}
 
     async init() {
-        if(this.pixelmap.texture==undefined) { console.error("pixelmap texture is null!"); return; }
+        
+        this.checkHealth();
+    }
+    async checkHealth(){
+        this.pixelmap.checkHealth();
+        if(this.layer&& this.layer._destroyed){
+            console.error("drawLayer.layer seems to have been destroyed!");
+            console.log(this.layer);
+            this.layer = undefined; //throw it away
+            //Create a new one
+        }
         if(this.layer==undefined){
-            this.layer = new PIXI.Sprite(this.pixelmap.texture); //This is the rendered object in the scene
-            this.addChild(this.layer);
-            this.pixelmap.ApplyPixels();
-            this.SetVisible(false);
+            this.createSubLayer();
         }
     }
+    async createSubLayer(){
+        //console.log("Creating drawLayer.layer");
+        if(this.pixelmap.texture==undefined) { console.error("pixelmap texture is null!"); return; }
+        if(this.pixelmap.texture.baseTexture===null){ console.error("pixelmap baseTexture is null!"); return;}
+        console.log(this.pixelmap.texture);
+        this.pixelmap.DrawRect(0,0,100,100,new Color32(255,0,0,255), true); //Debug
+
+        this.layer = await new PIXI.Sprite(this.pixelmap.texture); //This is the rendered object in the scene which we will paint with pixel data
+        await this.addChild(this.layer); //It will be a child of this object
+        //console.log("drawLayer.layer:");
+        //console.log(this.layer);
+        this.pixelmap.ApplyPixels();
+        this.SetVisible(true); //false
+    }
+
     SetVisible(v) { this.layer.visible = v; }
    /*  get visible() { return this.layer.visible; }
     set visible(value) { this.layer.visible = value;} */
@@ -116,7 +138,7 @@ export default class DrawLayer extends CanvasLayer {
     }
 
     async draw() {
-        super.draw();
+        await super.draw();
     }
 
     readPixels(target, x, y, width, height) { //target = rendertexture, hopefully
@@ -144,4 +166,14 @@ export default class DrawLayer extends CanvasLayer {
         return pixels;
     }
     
+    reposition(){
+        let r = canvas.dimensions.sceneRect;
+        let l = canvas.drawLayer.layer;;
+        l.transform.scale.set(1,1);
+        //let g = canvas.grid;
+        l.x = r.x/l.parent.transform.scale.x;
+        l.y = r.y/l.parent.transform.scale.y;
+        l.width = r.width/l.parent.transform.scale.x;
+        l.height = r.height/l.parent.transform.scale.y;
+    }
 }

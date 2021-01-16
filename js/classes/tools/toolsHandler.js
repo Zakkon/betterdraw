@@ -2,6 +2,8 @@ import ToolPreviewObj from "./toolPreviewObj";
 import BrushTool from "./brushTool";
 import DrawTool from "./drawTool";
 import { getUserSetting, getSetting } from "../../settings";
+import RectTool from "./rectTool";
+import GridBrushTool from "./gridBrushTool";
 
 export default class ToolsHandler {
 
@@ -13,6 +15,8 @@ export default class ToolsHandler {
   createAllTools() {
     this.tools = [];
     this.tools.push(new BrushTool("brush"));
+    this.tools.push(new GridBrushTool("grid"));
+    this.tools.push(new RectTool("rect"));
     this.activeTool = "brush";
     this.toolPreviews = [];
   }
@@ -24,12 +28,23 @@ export default class ToolsHandler {
     ellipse.setActive(false);
     layerobj.addChild(ellipse);
     this.toolPreviews.push(ellipse);
+
+    let grid = new ToolPreviewObj("grid");
+    grid.setActive(false);
+    layerobj.addChild(grid);
+    this.toolPreviews.push(grid);
+
+    let rect = new ToolPreviewObj("rect");
+    rect.setActive(false);
+    layerobj.addChild(rect);
+    this.toolPreviews.push(rect);
   }
   destroyToolPreviews(){
     for(let i = 0; i < this.toolPreviews.length; ++i)
     {
       let t = this.toolPreviews[i];
-      t.destroy();
+      if(t){t.destroy();}
+      
     }
     this.toolPreviews = [];
   }
@@ -52,11 +67,16 @@ export default class ToolsHandler {
     return null;
   }
 
+  /**
+   * 
+   * @param {string} toolName 
+   */
   setActiveTool(toolName) {
     this.clearActiveTool();
-    if(toolName=="sceneConfig"){return;}
+    if(toolName=="sceneConfig") { return; }
     this.activeTool = toolName;
     this.setPreviewTint();
+    //Ellipse shaped brush
     if (toolName === 'brush') {
       this.getToolPreview("ellipse").setActive(true);
       //this.ellipsePreview.visible = true;
@@ -65,16 +85,25 @@ export default class ToolsHandler {
     else {
       $('#simplefog-brush-controls #brush-size-container').hide();
     }
+    //Grid shaped brush
     if (toolName === 'grid') {
-      if (canvas.scene.data.gridType === 1) {
-        this.boxPreview.width = canvas.scene.data.grid;
+      if (canvas.scene.data.gridType === 1) { //We only work with square grids for now
+        this.getToolPreview("grid").setActive(true);
+        /* this.boxPreview.width = canvas.scene.data.grid;
         this.boxPreview.height = canvas.scene.data.grid;
-        this.boxPreview.visible = true;
+        this.boxPreview.visible = true; */
       }
       else if ([2, 3, 4, 5].includes(canvas.scene.data.gridType)) {
         //this._initGrid();
         //this.polygonPreview.visible = true;
       }
+    }
+
+    if(toolName==='rect'){
+      this.getToolPreview("rect").setActive(true);
+    }
+    else {
+
     }
   }
 /**

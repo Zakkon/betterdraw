@@ -5,8 +5,9 @@ import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
 import { PaintSyncer } from "./paintSyncer";
 import { NetSyncer } from "../netSyncer";
+import BrushTool from "./brushTool";
 
-export default class BrushTool extends DrawTool {
+export default class RectTool extends DrawTool {
     
     constructor(name){ //string
         super(name);
@@ -35,7 +36,7 @@ export default class BrushTool extends DrawTool {
     }
 
     onPointerDown(p,e) {
-        let color = getUserSetting('brushColor')//0xff0000;
+        let color = getUserSetting('brushColor')
         if(color==undefined) { color = "#ff0000" };
         color = webToHex(color);
         color = Color32.fromHex(color);
@@ -51,39 +52,35 @@ export default class BrushTool extends DrawTool {
         const preview = this.getPreviewObj();
         preview.width = size * 2;
         preview.height = size * 2;
-        let pointerPos = p;//e.data.getLocalPosition(canvas.app.stage);
+        let pointerPos = e.data.getLocalPosition(canvas.app.stage);
         preview.x = pointerPos.x;
         preview.y = pointerPos.y;
         // If drag operation has started
         if (this.op) {
             if(p.x==this.lastPos.x && p.y==this.lastPos.y){ this.lastPos = {x:p.x, y:p.y}; return;} //Simple checker to make sure that cursor has moved
             this.lastPos = {x:p.x, y:p.y};
-            this.syncer.LogBrushStep(p.x, p.y);
         }
     }
     onPointerUp(p,e) {
+
+        
+
         this.interruptStroke();
         this.op = false;
     }
-    getPreviewObj(){
-        return ToolsHandler.singleton.getToolPreview("ellipse");
-    }
-
+    getPreviewObj(){ return ToolsHandler.singleton.getToolPreview("rect"); }
     beginStroke(){
         this.op = true;
         const isCellMode = false; //find from somewhere
-        const brushSize = getUserSetting('brushSize');
+        const brushSize = 1;//getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
-
-        if(isCellMode){
-            this.syncer.LogBrushStart_Cells(this.brushColor, brushSize);
-        }
-        else{
-            this.syncer.LogBrushStart(this.brushColor, brushSize);
-        }
+        //Draw rect shape here with the preview obj, but dont start an actual stroke yet
     }
     interruptStroke(){
-        if(this.op){ this.syncer.LogBrushEnd(); } //logHistory();
+        if(this.op) {
+            //Create the stroke and send it to syncer
+            this.syncer.LogRect(0,0,10,10, false, this.brushColor);
+        }
         this.op = false;
     }
 }
