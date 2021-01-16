@@ -5,12 +5,12 @@ import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
 import { PaintSyncer } from "./paintSyncer";
 import { NetSyncer } from "../netSyncer";
+import BrushTool from "./brushTool";
 
-export default class BrushTool extends DrawTool {
+export default class RectTool extends DrawTool {
     
-    constructor(name, type){ //string
+    constructor(name){ //string
         super(name);
-        this.type = type;
         this.syncer = new PaintSyncer();
         this.lastPos = {x:-9999,y:-9999};
         let ticker = PIXI.Ticker.shared;
@@ -28,16 +28,15 @@ export default class BrushTool extends DrawTool {
     }
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
-        if(parts===undefined||parts.length<1) { return; }
-        console.log(parts);
+        if(parts===undefined||parts.length<1){return;}
         const pm = canvas.drawLayer.pixelmap;
         pm.DrawStrokeParts(parts);
 
         NetSyncer.sendStrokeUpdates(parts);
     }
 
-    onPointerDown(p, pixelPos,e) {
-        let color = getUserSetting('brushColor')//0xff0000;
+    onPointerDown(p,e) {
+        let color = getUserSetting('brushColor')
         if(color==undefined) { color = "#ff0000" };
         color = webToHex(color);
         color = Color32.fromHex(color);
@@ -48,45 +47,40 @@ export default class BrushTool extends DrawTool {
         this.op = true;
         
     }
-    onPointerMove(p, pixelPos, e) {
+    onPointerMove(p, e) {
         const size = getUserSetting('brushSize');//this.brushSize;
         const preview = this.getPreviewObj();
         preview.width = size * 2;
         preview.height = size * 2;
-        preview.x = p.x;
-        preview.y = p.y;
+        let pointerPos = e.data.getLocalPosition(canvas.app.stage);
+        preview.x = pointerPos.x;
+        preview.y = pointerPos.y;
         // If drag operation has started
         if (this.op) {
-            console.log(p);
-            console.log(pixelPos);
-            if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
-            this.lastPos = {x:pixelPos.x, y:pixelPos.y};
-            this.syncer.LogBrushStep(pixelPos.x, pixelPos.y);
+            if(p.x==this.lastPos.x && p.y==this.lastPos.y){ this.lastPos = {x:p.x, y:p.y}; return;} //Simple checker to make sure that cursor has moved
+            this.lastPos = {x:p.x, y:p.y};
         }
     }
-    onPointerUp(p, pixelPos,e) {
+    onPointerUp(p,e) {
+
+        
+
         this.interruptStroke();
         this.op = false;
     }
-    getPreviewObj(){
-        return ToolsHandler.singleton.getToolPreview("ellipse");
-    }
-
+    getPreviewObj(){ return ToolsHandler.singleton.getToolPreview("rect"); }
     beginStroke(){
         this.op = true;
         const isCellMode = false; //find from somewhere
-        const brushSize = getUserSetting('brushSize');
+        const brushSize = 1;//getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
-
-        if(isCellMode){
-            this.syncer.LogBrushStart_Cells(this.brushColor, brushSize);
-        }
-        else{
-            this.syncer.LogBrushStart(this.type, this.brushColor, brushSize);
-        }
+        //Draw rect shape here with the preview obj, but dont start an actual stroke yet
     }
     interruptStroke(){
-        if(this.op){ console.log("logbrushend"); this.syncer.LogBrushEnd(); } //logHistory();
+        if(this.op) {
+            //Create the stroke and send it to syncer
+            this.syncer.LogRect(0,0,10,10, false, this.brushColor);
+        }
         this.op = false;
     }
 }

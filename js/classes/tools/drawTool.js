@@ -5,13 +5,13 @@ export default class DrawTool {
         this.name = name;
     }
 
-    onPointerDown(p, e){
+    onPointerDown(p, pixelPos, e){
         
     }
-    onPointerMove(p, e){
+    onPointerMove(p, pixelPos, e){
 
     }
-    onPointerUp(p, e){
+    onPointerUp(p, pixelPos, e){
         
     }
     renderBrush(data, save = true) {

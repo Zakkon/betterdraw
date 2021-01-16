@@ -7,7 +7,7 @@ procedure:
 --------
 SYNCING
 --------
-Lazy Way, relying on scene flags (functioning):
+Lazy Way, relying on scene flags (deprecated):
 >When layer is created, we put all the layer info (including texture buffer) in the scene flags
 >When clients join, they will already know the scene flags, and be able to reproduce the texture
 >GM will need to update the buffer at the end of every stroke, to keep the texture updated
@@ -15,8 +15,35 @@ Lazy Way, relying on scene flags (functioning):
 Problems:
 setting scene flags is quite slow, and *will* cause framedrops when applying the buffer
 ------------------------
-Intermediate Way, using scene flags & socket messages:
+Intermediate Way, using scene flags & socket messages (deprecated):
 >Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
 >clients recieving the StrokeParts can replicate the drawing in realtime on their texture
 >the StrokeParts needs a timestamp, which is compared to the timestamp of the most recent scene flags update, stored in the scene flags itself
 >if the scene flags update is more recent then the StrokePart, that means the StrokePart is outdated and we can simply use the buffer within the scene flags instead
+-----------------------
+NEW DEVELOPMENT, SCENE FLAGS CANNOT BE USED
+Storing the texture buffer in sceneFlags causes tremendous lag when moving characters around on the map
+-----------------------
+Using an image file instead of scene flags (in development)
+>Non-GM client can load a texture straight from the server and render that onto the layer object
+>GM handles saving/updating that image file when it deems nessesary
+>GM will cache StrokeParts in the scene flags
+>When the GM finally updates the image file, all StrokeParts are also deleted, since they are out of date. Clients then load from the image file
+-----------------------
+SCENE STARTUP BUGS:
+-----------------
+FROM NOSCENE +F5 TO NEW SCENE:
+>Detects pixelmap texture is gone, thats ok.
+>Reaches config screen, all good so far
+>Save config screen changes, scene.update is called, then CanvasInit_on. Lag starts here due to LayerSettings.Save
+>In CanvasInit_on, we detect that the pixelmap is once again gone, and the drawlayer.layer aswell. so we recreate those
+>After create new drawlayer screen, loadaction is called which rescales the scene, calling scene.update
+>Loadaction then calls .init on drawlayer, which sees that the pixelmap texture and drawlayer.layer are once again destroyed, so we recreate those
+>Foundry then draws the scene, CanvasInit_on is called
+>In CanvasInit_on, we see that the pixelmap texture is ONCE AGAIN destroyed, so we rebuild it. drawlayer.layer seems to have survived
+>rendertexture seems completely blank
+---------------
+we need to figure out what to do in all of the hooks
+CANVASINIT_ON:
+>Pixelmap.texture (a rendertexture) is almost certainly destroyed and needs repairing + buffer added
+

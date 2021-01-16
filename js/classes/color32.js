@@ -21,6 +21,7 @@ export default class Color32 {
     }
     static fromWeb(web)
     {
+        if(web===undefined){console.error("color is undefined!");}
         return hexToColor(webToHex(web));
     }
 }

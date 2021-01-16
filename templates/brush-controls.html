@@ -9,13 +9,21 @@
         <div id = "brush-color">
             <input type="color" name="brushColor" value="{{ brushColor }}" data-dtype="String"/>
         </div>
-        <div id="brush-opacity-container">
+        <!-- <div id="brush-opacity-container">
             <h3 class="form-header">Opacity</h3>
             <div class="form-group brush-opacity">
                 <input type="range" name="brushOpacity" value="{{ brushOpacity }}" min="0" max="100" step="1" data-dtype="Number"/>
                 <div class="label left-label">Reveal</div>
                 <div class="label right-label">Hide</div>
             </div>
-        </div>
+        </div> -->
+        <div class="dropdown">
+            <button type="submit" name="submit" class="dropbtn">Dropdown</button>
+            <div id="myDropdown" class="dropdown-content">
+              <a href="#">Link 1</a>
+              <a href="#">Link 2</a>
+              <a href="#">Link 3</a>
+            </div>
+          </div> 
     </form>
 </div>

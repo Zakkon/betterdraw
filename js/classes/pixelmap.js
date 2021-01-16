@@ -1,6 +1,9 @@
 import { createThAWImage, resampleImage, ResamplingMode } from "thaw-image-processing.ts";
 import Color32 from "./color32";
+import DrawLayer from "./drawlayer";
 import SmartTexture from "./smarttexture";
+import { Stroke } from "./tools/stroke";
+import { StrokePart } from "./tools/strokePart";
 
 export default class PixelMap {
 
@@ -40,7 +43,7 @@ export default class PixelMap {
         //Simple check to make sure the buffer is the same size as stated
         if(buffer==undefined){console.error("buffer is undefined!");}
         if(buffer.length===NaN){console.error("Buffer does not have a length property, are you sure its really a Uint8ClampedArray?"); return;}
-        if(buffer.length != (bufferWidth*bufferHeight*4)){console.error("buffer is of the wrong size!"); return;}
+        if(buffer.length != (bufferWidth*bufferHeight*4)){console.error("Buffer is of the wrong size! Its size is " + buffer.length + ", and we expected one of size " + (bufferWidth*bufferHeight*4) + " (for our "+this.width+"x"+this.height +" texture)"); return;}
         //We will essentially replace our pixel buffer with theirs
         this.pixels = buffer; //assume its a uin8clamped array, rgba32 format
         if((this.width!==bufferWidth)||(this.height!==bufferHeight)) //See if this buffer is of a different size then our current one
@@ -107,10 +110,26 @@ export default class PixelMap {
         }
         return l;
     }
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {Color32} color 
+     * @param {boolean} autoApply 
+     */
     DrawPixel(x, y, color, autoApply=false) {
         this._setPixel(x,y,color);
         if(autoApply){ this.ApplyPixels();}
     }
+     /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h
+     * @param {Color32} col 
+     * @param {boolean} autoApply 
+     */
     DrawRect(x, y, w, h, col, autoApply=false)
     {
         //console.log("Draw rect at " + x + "," + y + " : " + w + "," + h);
@@ -129,8 +148,16 @@ export default class PixelMap {
                 this.pixels[ix + 3] = col.a;
             }
         }
-        if (autoApply) { this.ApplyPixels(); }
+        if (autoApply) { console.log("Applying"); this.ApplyPixels(); }
     }
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} brushSize 
+     * @param {Color32} color 
+     * @param {boolean} autoApply 
+     */
     DrawCircle(x, y, brushSize, color, autoApply=false)
     {
         if(brushSize===undefined){console.error("BrushSize is undefined!");}
@@ -178,6 +205,57 @@ export default class PixelMap {
         if (autoApply) { this.ApplyPixels(); }
         return edits;
     }
+    /**
+     * 
+     * @param {{type:string, color:Color32, cellBased:boolean, brushSize: number, x:number, y:number, width:number, height:number, xyCoords:{x:number, y:number}[]}[]} parts 
+     * @param {boolean} autoApply 
+     */
+    DrawStrokeParts(parts, autoApply=true) {
+        //todo: check against duplicate coordinates
+        for(let i = 0; i < parts.length; ++i)
+        {
+            let p = parts[i];
+            if(p.type=="circle") {
+                if(p.cellBased) {
+                    
+                }
+                else{
+                    for(let j = 0; j < p.xyCoords.length; ++j){
+                        this.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
+                    }
+                }
+            }
+            else if(p.type=="rect"){
+                if(p.cellBased){
+
+                }
+                else{
+                    this.DrawRect(p.x, p.y, p.width, p.height, p.color, false);
+                }
+            }
+        }
+        //Apply the pixels (renders the texture to the sprite)
+        if(parts.length>0 && autoApply) { this.ApplyPixels(); }
+        //canvas.drawLayer.update();
+    }
+    /**
+     * 
+     * @param {Stroke[]} strokes 
+     * @param {boolean} autoApply 
+     */
+    DrawStrokes(strokes, autoApply=true)
+    {
+        let parts = [];
+        for(let i = 0; i < strokes.length; ++i)
+        {
+            var steps = strokes[i].GetSteps(false);
+            if(steps.length>0){
+                parts.push(new StrokePart(steps, strokes[i].brushSize, strokes[i].color, strokes[i].cellBased));
+            }
+        }
+        this.DrawStrokeParts(parts, false);
+        if(parts.length>0&&autoApply){this.ApplyPixels();}
+    }
     _setPixel(x, y, color){
         const i4 = ((y * this.width) + x) * 4;
         this._setPixel_i4(i4, color);
@@ -206,6 +284,17 @@ export default class PixelMap {
         gl.renderer.render(sprite, rt);
         sprite.destroy();
         tex.destroy();
+    }
+    checkHealth(){
+        let needsTextureRepair = false;
+        if(this.texture==null||this.tex==undefined){needsTextureRepair=true;}
+        else if(this.texture.baseTexture==null||this.texture.baseTexture==undefined){needsTextureRepair=true;}
+
+        if(needsTextureRepair){
+            console.error("Pixelmap.texture seems to have been destroyed! Replacing...");
+            this.recreateTexture();
+            this.ApplyPixels();
+        }
     }
     recreateTexture(){
         this.texture = this._newTexture(this.width, this.height);
