@@ -17,9 +17,9 @@ export class PaintSyncer {
      * @param {Color32} color 
      * @param {number} brushSize 
      */
-    LogBrushStart(color, brushSize) {
+    LogBrushStart(type, color, brushSize) {
         this.strokes.forEach(function(s){s.isActive=false;});
-        var stroke = new Stroke(brushSize, color, false);
+        var stroke = new Stroke(type, brushSize, color, false);
         stroke.isActive = true;
         this.strokes.push(stroke);
     }
@@ -39,7 +39,7 @@ export class PaintSyncer {
      * @param {number} y 
      */
     LogBrushStep(x, y) { //integers
-        if(this.strokes.length<1){return;}
+        if(this.strokes.length<1) { console.error("no active stroke to add steps to"); return; }
         this.activeStroke.AddCoords({x:x, y:y});
     }
     /**
@@ -80,6 +80,8 @@ export class PaintSyncer {
             else if(stroke.type == "rect") {
                 parts.push({type: stroke.type, x:stroke.x, y:stroke.y, width:stroke.width, height:stroke.height, color:stroke.color, cellBased:stroke.cellBased});
             }
+            else if(stroke.type==undefined){console.error("Brush does not have a designated type!");}
+            else{console.error("Did not recognize a brush of type " + stroke.type);}
             //Delete the entire stroke if its empty and not the active stroke
             if(this.strokes[i].isEmpty && !this.strokes[i].isActive){
                 //Delete this stroke, its spent

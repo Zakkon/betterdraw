@@ -157,25 +157,26 @@ export default class SimpleDrawLayer extends DrawLayer {
      * Mouse handlers for canvas layer interactions
      */
     _pointerDown(e) {
-        if(!this.layer.visible){return;}
+        if(!this.isSetup){return;}
+        console.log("draw");
         // Don't allow new action if history push still in progress
         if (this.history.historyBuffer.length > 0) return;
         // On left mouse button
         if (e.data.button === 0) {
-            const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.app.stage);
-            
-            console.log(p);
+            let data = this._cursorData(e);
+            console.log("drawlayer:");
             console.log(canvas.drawLayer);
-            let r = canvas.dimensions.sceneRect;
-            let p2 = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
-            console.log(p2);
-            // Round positions to nearest pixel
-            p.x = Math.round(p.x);
-            p.y = Math.round(p.y);
+            console.log("drawlayer.layer:");
+            console.log(canvas.drawLayer.layer);
+            console.log("p:");
+            console.log(data.p);
+            console.log("p2:");
+            console.log(data.pixelPos);
+
             this.op = true;
             // Check active tool
             const curTool = ToolsHandler.singleton.curTool;
-            curTool.onPointerDown(p2, e);
+            curTool.onPointerDown(data.p, data.pixelPos, e);
             // Call _pointermove so single click will still draw brush if mouse does not move
             this._pointerMove(e);
         }
@@ -189,36 +190,38 @@ export default class SimpleDrawLayer extends DrawLayer {
     }
     _pointerMove(e) {
         if(!this.isSetup){return;}
-        // Get mouse position translated to canvas coords;
-        const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.drawLayer //canvas.app.stage);
-        let r = canvas.dimensions.sceneRect;
-            let p2 = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
+       
+        let data = this._cursorData(e);
 
-        // Round positions to nearest pixel
-        //p.x = Math.round(p.x);
-        //p.y = Math.round(p.y);
-
-        //If we want to round to a square pixel, rounding down is more accurate, as the value only changes once the cursor moves onto a new pixel, not whenever it happens to be closer to the top-left of another pixel
-        p.x = Math.floor(p.x); p.y = Math.floor(p.y);
         const curTool = ToolsHandler.singleton.curTool;
         if(curTool==null){return;}
-        curTool.onPointerMove(p, e);
+        curTool.onPointerMove(data.p, data.pixelPos, e);
     }
     _pointerUp(e) {
-        if(!this.layer.visible){return;}
+        if(!this.isSetup){return;}
     // Only react to left mouse button
         if (e.data.button === 0) {
-            // Translate click to canvas position
-            const p = e.data.getLocalPosition(canvas.drawLayer);//canvas.app.stage);
-            
-            // Round positions to nearest pixel
-            p.x = Math.round(p.x);
-            p.y = Math.round(p.y);
+            let data = this._cursorData(e);
             const curTool = ToolsHandler.singleton.curTool;
-            curTool.onPointerUp(p, e);
+            curTool.onPointerUp(data.p, data.pixelPos, e);
             // Push the history buffer
             this.history.commitHistory();
         }
+    }
+    _cursorData(e){
+         //Position in relation to drawLayer (used to position graphical object)
+        const p = e.data.getLocalPosition(canvas.drawLayer);
+        let r = canvas.dimensions.sceneRect;
+        //Pixel on the drawlayer (needs rounding)
+        //let pixelPos = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
+        let l = canvas.drawLayer.layer.transform;
+        let pixelPos = {x:(p.x-l.position.x)/l.scale.x, y:(p.y-l.position.y)/l.scale.y};
+
+        // Round positions to nearest pixel
+        //If we want to round to a square pixel, rounding down is more accurate, as the value only changes once the cursor moves onto a new pixel, not whenever it happens to be closer to the top-left of another pixel
+        pixelPos.x = Math.floor(pixelPos.x);
+        pixelPos.y = Math.floor(pixelPos.y);
+        return {p:p, pixelPos: pixelPos};
     }
 
     /**

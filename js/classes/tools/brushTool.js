@@ -8,8 +8,9 @@ import { NetSyncer } from "../netSyncer";
 
 export default class BrushTool extends DrawTool {
     
-    constructor(name){ //string
+    constructor(name, type){ //string
         super(name);
+        this.type = type;
         this.syncer = new PaintSyncer();
         this.lastPos = {x:-9999,y:-9999};
         let ticker = PIXI.Ticker.shared;
@@ -27,14 +28,15 @@ export default class BrushTool extends DrawTool {
     }
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
-        if(parts===undefined||parts.length<1){return;}
+        if(parts===undefined||parts.length<1) { return; }
+        console.log(parts);
         const pm = canvas.drawLayer.pixelmap;
         pm.DrawStrokeParts(parts);
 
         NetSyncer.sendStrokeUpdates(parts);
     }
 
-    onPointerDown(p,e) {
+    onPointerDown(p, pixelPos,e) {
         let color = getUserSetting('brushColor')//0xff0000;
         if(color==undefined) { color = "#ff0000" };
         color = webToHex(color);
@@ -46,22 +48,23 @@ export default class BrushTool extends DrawTool {
         this.op = true;
         
     }
-    onPointerMove(p, e) {
+    onPointerMove(p, pixelPos, e) {
         const size = getUserSetting('brushSize');//this.brushSize;
         const preview = this.getPreviewObj();
         preview.width = size * 2;
         preview.height = size * 2;
-        let pointerPos = p;//e.data.getLocalPosition(canvas.app.stage);
-        preview.x = pointerPos.x;
-        preview.y = pointerPos.y;
+        preview.x = p.x;
+        preview.y = p.y;
         // If drag operation has started
         if (this.op) {
-            if(p.x==this.lastPos.x && p.y==this.lastPos.y){ this.lastPos = {x:p.x, y:p.y}; return;} //Simple checker to make sure that cursor has moved
-            this.lastPos = {x:p.x, y:p.y};
-            this.syncer.LogBrushStep(p.x, p.y);
+            console.log(p);
+            console.log(pixelPos);
+            if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
+            this.lastPos = {x:pixelPos.x, y:pixelPos.y};
+            this.syncer.LogBrushStep(pixelPos.x, pixelPos.y);
         }
     }
-    onPointerUp(p,e) {
+    onPointerUp(p, pixelPos,e) {
         this.interruptStroke();
         this.op = false;
     }
@@ -79,11 +82,11 @@ export default class BrushTool extends DrawTool {
             this.syncer.LogBrushStart_Cells(this.brushColor, brushSize);
         }
         else{
-            this.syncer.LogBrushStart(this.brushColor, brushSize);
+            this.syncer.LogBrushStart(this.type, this.brushColor, brushSize);
         }
     }
     interruptStroke(){
-        if(this.op){ this.syncer.LogBrushEnd(); } //logHistory();
+        if(this.op){ console.log("logbrushend"); this.syncer.LogBrushEnd(); } //logHistory();
         this.op = false;
     }
 }

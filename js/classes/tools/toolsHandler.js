@@ -14,9 +14,9 @@ export default class ToolsHandler {
 
   createAllTools() {
     this.tools = [];
-    this.tools.push(new BrushTool("brush"));
-    this.tools.push(new GridBrushTool("grid"));
-    this.tools.push(new RectTool("rect"));
+    this.tools.push(new BrushTool("brush", "circle"));
+    this.tools.push(new GridBrushTool("grid", "grid"));
+    this.tools.push(new RectTool("rect", "rect"));
     this.activeTool = "brush";
     this.toolPreviews = [];
   }
