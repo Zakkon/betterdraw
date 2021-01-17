@@ -28,20 +28,21 @@ export function loadModuleSettings(settingsName){
     return game.settings.get("betterdraw", settingsName);
 }
 
-export function saveSceneSettings(){
-    //Get current settings
-    //var curSettings = loadModuleSettings("main");
-    //curSettings.config = false; //Set this to false, so it doesnt appear in module configuration menu
+export function saveSceneSettings(settings, buffer) {
+    const id = canvas.scene.data._id;
+    const imgname = id + ".png"
     
-    var data = {
-        imgname: "dungeon.png",
-        gridsize: 50,
-        texW: 100,
-        texH: 100,
-    }
-    setSetting("drawlayerinfo", data);
+    //Save current settings
+    settings.hasimg = true;
+    settings.imgname = imgname;
+    setSetting("drawlayerinfo", settings);
+
+    
+    const dataPath = "betterdraw/uploaded";
+    savePNG(buffer, imgname, dataPath)
 }
-export function saveLayer(layerObj, path){
+export function saveLayer(layerObj, path) {
+
     const pixelmap = layerObj.pixelmap;
     const buffer = pixelmap.texture.encodeToPNG();
     savePNG(buffer, "dungeon.png", "betterdraw/uploaded");

@@ -1,6 +1,7 @@
 import { createThAWImage, resampleImage, ResamplingMode } from "thaw-image-processing.ts";
 import Color32 from "./color32";
 import DrawLayer from "./drawlayer";
+import { LayerSettings } from "./layerSettings";
 import SmartTexture from "./smarttexture";
 import { Stroke } from "./tools/stroke";
 import { StrokePart } from "./tools/strokePart";
@@ -223,6 +224,15 @@ export default class PixelMap {
                     for(let j = 0; j < p.xyCoords.length; ++j){
                         this.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
                     }
+                }
+            }
+            else if(p.type=="grid") {
+                const gridSize = LayerSettings.pixelsPerGrid;
+                for(let j = 0; j < p.xyCoords.length; ++j){
+                    let cellCoords = p.xyCoords[j];
+                    //Convert to pixel coords
+                    this.DrawRect(cellCoords.x * gridSize, cellCoords.y * gridSize, gridSize, gridSize,
+                        p.color, false);
                 }
             }
             else if(p.type=="rect"){

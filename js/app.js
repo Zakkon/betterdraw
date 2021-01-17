@@ -5,7 +5,7 @@ import SimpleDrawLayer from "./classes/simpledraw.js";
 import ToolsHandler from "./classes/tools/toolsHandler.js";
 import { loadJSONasync, saveSceneSettings } from "./classes/serializiation/saveload.js";
 var pixels = require('image-pixels');
-import { calcGridImportSize } from "./helpers.js";
+import { calcGridImportSize, sleep } from "./helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 import { NetSyncer } from "./classes/netSyncer.js";
@@ -16,7 +16,7 @@ Hooks.once('canvasInit', () => {
     console.log("CANVASINIT_ONCE");
     //Create the ToolsHandler
     const th = new ToolsHandler(); //will create a singleton of itself
-    canvas.toolsHandler = th;
+    canvas.toolsHandler = th; //Storing it in canvas aswell, hoping not to have it be garbage collected
     
     //Add our SimpleDrawLayer to the canvas. This wont have any visible effect at first, it's simply a place that interacts with controls, and can in the future spawn sprites that we can draw on.
     const layerct = canvas.stage.children.length;
@@ -24,48 +24,33 @@ Hooks.once('canvasInit', () => {
     canvas.drawLayer.draw(); //This has to be called straight away, it basically initializes the CanvasLayer that is the core of SimpleDrawLayer
 });
 Hooks.on("canvasInit", async function() {
-    console.log("CANVASINIT_ON");
-    //This function can be called on things like world grid rescale, so expect this to be called more then once
+  //This hook can be called on things like world grid rescale, so expect this to be called more then once
+  console.log("CANVASINIT_ON");
 
-    //This creates a sprite inside the drawLayer, but hides it for now
-    await canvas.drawLayer.init();
-    addToCanvasLayersArray(); //We need to call this so the game can find our drawLayer in some core functions
-    canvas.drawLayer.SetVisible(true);
-    await sleep(100); //Need to sleep here to ensure that layer is properly positioned
-    canvas.drawLayer.reposition(); canvas.drawLayer.layer.texture = canvas.drawLayer.pixelmap.texture;
-    //Create the preview objects for the different brushes. They will live inside drawLayer.
-    ToolsHandler.singleton.createToolPreviews(canvas.drawLayer);
-    canvas.drawLayer.isSetup = true;
-    
-    console.log("DrawRect");
-    canvas.drawLayer.pixelmap.DrawRect(0,0,50,50, new Color32(255,0,255,255), true);
+  await canvas.drawLayer.init();//Make sure we have a sprite object in the layer, and that its rendertexture is properly set, drawing from the pixelmap
+  //We need to insert our drawLayer into the .layers of the canvas, so the game can find our drawLayer in some core functions
+  let theLayers = Canvas.layers;
+  theLayers.drawLayer = SimpleDrawLayer;
+  Object.defineProperty(Canvas, 'layers', {get: function() { return theLayers }});
+  //Set the initial visibility of the sprite
+  canvas.drawLayer.SetVisible(false);
+  await sleep(100); //Need to sleep here to ensure that layer is properly positioned
+  canvas.drawLayer.reposition();
+  canvas.drawLayer.isSetup = true; //Set isSetup to true, which tells the drawLayer that its ready to interact with stuff like cursors
+  canvas.drawLayer.layer.texture = canvas.drawLayer.pixelmap.texture; //Just to make sure the layer texture is properly set. Probably unessesary.
+  //Create the preview objects for the different brushes. They will live inside drawLayer.
+  ToolsHandler.singleton.createToolPreviews(canvas.drawLayer);
+  
+  //Do any test drawing functions here
 });
-function addToCanvasLayersArray(){
-    //Call this from Hooks.on("canvasInit")
-    //FIX FOR having Canvas.Layers not contain drawLayer, which leads to the controlbutton to the left bugging out
-    //CAUSES BUG: Brush preview obj doesnt line up with mousecursor. i suspect this is the previewobjs fault
-    //ALSO FIXES: positioning of layer object, its now lined up with background layer object
-    let theLayers = Canvas.layers;
-    theLayers.drawLayer = SimpleDrawLayer;
-
-    Object.defineProperty(Canvas, 'layers', {get: function() {
-        return theLayers
-    }});
-}
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 Hooks.on("ready", async function() {
   //await setSetting("strokes", null);
   NetSyncer.onReady();
-  //Set up our socket listener
   game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
-  //game.socket.emit('module.betterdraw', {event: "clientready", userid: [game.user.id]});
-  //game.socket.emit("module.BetterDraw", {event: "testevent", eventdata: ["hey"]});
 
   //await loadFromSceneFlags();
 
-  /* console.log("SCENE:");
+  console.log("SCENE:");
   console.log(canvas.scene);
   if(canvas.scene===null){return;}
   canvas.drawLayer.SetVisible(true);
@@ -73,34 +58,15 @@ Hooks.on("ready", async function() {
   //Any strokes made after this texture was last saved will be drawn ontop
 
 
-  let strokeHistory = await getSetting("strokes");
+  /*let strokeHistory = await getSetting("strokes");
   if(!strokeHistory){return;}
   let strokes = NetSyncer.DecodeStrokes(strokeHistory);
   //Draw the strokes onto the pixelmap
   canvas.drawLayer.pixelmap.DrawStrokes(strokes, true); */
-});
-async function loadFromSceneFlags() {
-  //Lets check the scene flags and see if any texture data is stored on there
-  let settings = getSetting("drawlayerinfo");
-  console.log(settings);
-  if(!settings){return;}
-  if(settings.active && settings.hasBuffer) {
-    //The layer is active, and a buffer has been cached
-    let buffer = getSetting("buffer");
-    if(!buffer){return;}
-    //There's a problem, we get the buffer in a strange non-array format, and we need to fix that
-    var bufferArray = LayerSettings.bufferToUint8ClampedArray(buffer);
-    if(bufferArray.length!=settings.spriteW*settings.spriteH*4){console.error("Buffer does not match its specified size!"); return; }
-    //Load the layer on our client
-    let e = await LayerSettings.LoadFromBuffer(settings, bufferArray);
-    let task = new LoadAction();
-    task.Perform(e);
-  }
-  else {
 
-  }
-  await setSetting("buffer", null); //Debug
-}
+
+  
+});
 function recieveNetMsg(data){
   //console.log("MSG RECIEVED!");
   //console.log(data);
@@ -120,7 +86,6 @@ Hooks.on('updateUser', () => {
 });
 Hooks.on('updateScene', () => {
   console.log("UPDATE SCENE");
-  //console.log(arg1);
   NetSyncer.onUpdateScene();
 });
 /**
@@ -237,65 +202,30 @@ function tryUpload(file) {
   else { response = FilePicker.upload(source, "basic-paint/uploaded", file, {}); }
   console.log(response);
 }
-/* function tryDownload(){
-  var buffer;
-  let promise = new Promise(function(resolve, reject) {
-      let response = await fetch('/basic-paint/uploaded/image.png');
-      let blob = await response.blob();
-      console.log(blob);
-      buffer = await new Response(blob).arrayBuffer();
-      console.log(buffer);
-      resolve("done");
-    });
-    promise.then(
-      result => applyToDrawLayer(buffer, 400, 400),
-      error => console.log(error)
-    );
-  /* (async() => {
-      
-      //Apply that to the drawLayer
-      applyToDrawLayer(buffer, 400, 400);
-  })(); */
-/*}*/ 
-function tryget(callback) {
-  const a = () => new Promise( resolve => {
-      var allo = 123;
-      (async() => {
-      let response = await fetch('/betterdraw/uploaded/image.png');
-      let blob = await response.blob();
-      let buffer = await new Response(blob).arrayBuffer();
-      setTimeout( () => resolve( buffer ), 1000 ); // 1s delay
-      })();
-  } );
-  a().then( ( result ) => {
-      console.log( 'a() success:', result );
-      applyToDrawLayer(result, 400,400);
-  });
-}
-function tryGet2(){
-  
-  const container = new PIXI.Container();
-  canvas.app.stage.addChild(container);
-
-  const texture = PIXI.Texture.from('/betterdraw/uploaded/image.png');
-  var rt = canvas.drawLayer.maskTexture;
-  const sprite = new PIXI.Sprite(rt);
-  sprite.x = 450;
-  sprite.y = 60;
-  canvas.app.stage.addChild(sprite);
-  canvas.app.renderer.render(container, rt);
-}
 async function tryGet3() {
-  var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
-  //console.log(data);
-  console.log(width + " x " + height);
-
-  //applyToDrawLayer(data, width, height);
+  //Load settings, or create new ones if none were found
   let settings = getSetting("drawlayerinfo");
-  //console.log(settings);
-  if(!settings){settings = {spriteW: width, spriteH: height, desiredGridSize: 1}};
-  let e = await LayerSettings.LoadFromBuffer(settings, data);
+  if(!settings) {
+  //Lets create a LayerSettings that wishes to represent each pixel in the image as its own grid
+  settings = new LayerSettings();
+  //We would like the sprite to have the exact same size (in pixels) as our texture
+  settings.spriteWidth = width;
+  settings.spriteHeight = height;
+  //And each grid cell to be one pixel large (impossible in Foundry, will work around that later on)
+  settings.desiredGridSize = 1;
+  };
+
+  let e = null;
+  if(settings.hasimg) {
+    //Grab an image file from the server
+    //data = buffer, width = buffer width, height = buffer height
+    var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imgname);
+    e = await LayerSettings.LoadFromBuffer(settings, data, width, height);
+  }
+  else {
+    e = await LayerSettings.LoadFromSettings(settings);
+  }
+
   let task = new LoadAction();
   await task.Perform(e);
-  await setSetting("buffer", null); //Debug
 }

@@ -29,7 +29,6 @@ export default class BrushTool extends DrawTool {
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
         if(parts===undefined||parts.length<1) { return; }
-        console.log(parts);
         const pm = canvas.drawLayer.pixelmap;
         pm.DrawStrokeParts(parts);
 
@@ -57,8 +56,6 @@ export default class BrushTool extends DrawTool {
         preview.y = p.y;
         // If drag operation has started
         if (this.op) {
-            console.log(p);
-            console.log(pixelPos);
             if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
             this.lastPos = {x:pixelPos.x, y:pixelPos.y};
             this.syncer.LogBrushStep(pixelPos.x, pixelPos.y);
@@ -72,14 +69,14 @@ export default class BrushTool extends DrawTool {
         return ToolsHandler.singleton.getToolPreview("ellipse");
     }
 
-    beginStroke(){
+    beginStroke() {
         this.op = true;
         const isCellMode = false; //find from somewhere
         const brushSize = getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
-
+        console.log(this.type);
         if(isCellMode){
-            this.syncer.LogBrushStart_Cells(this.brushColor, brushSize);
+            this.syncer.LogBrushStart_Cells(this.type, this.brushColor, brushSize);
         }
         else{
             this.syncer.LogBrushStart(this.type, this.brushColor, brushSize);

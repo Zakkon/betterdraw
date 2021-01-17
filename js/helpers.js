@@ -142,28 +142,45 @@ export function readPixel(target, x = 0, y = 0) {
  * 
  * @param {number} pixelsPerGrid 
  * @param {number} textureWidth 
- * @param {number} textureHeight 
- * @param {number} sceneWidth 
- * @param {number} sceneHeight 
+ * @param {number} textureHeight
  */
-export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight){
+export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight, sceneWidth, sceneHeight){
+  //All of these are desired values^
   //The only unit we count for here is 'pixel'. All incoming parameters are measured by that unit.
   //The above parameters describe a *desired* bunch of settings, its out job to solve problems
-  let texSize = {w:textureWidth, h:textureHeight};
+  //texture size doesnt need to change
+  //scene width does however rely on texture width and grid size
+
+  /* example: 5000w scene, 5000px texture, desired grid size = 1
+  grid size upped from 1 to 50
+  tex size remains at 5000px
+  scene size upped to 5000*50 = 25000
+  */
+
+  let sceneSize = { w: sceneWidth, h: sceneHeight };
   if(pixelsPerGrid<50) //Foundry doesnt allow for grid sizes < 50px
   {
-    //if ppg = 1, s = 50
-    //if ppg is 2, s = 25
     let s = 50/pixelsPerGrid;
     pixelsPerGrid = 50;
-    texSize.w = Math.ceil(texSize.w * s);
-    texSize.h = Math.ceil(texSize.h * s);
+    sceneSize.w = Math.ceil(sceneSize.w * s);
+    sceneSize.h = Math.ceil(sceneSize.h * s);
   }
-  const sceneWidthInGrids = Math.ceil(texSize.w / pixelsPerGrid);
-  const sceneHeightInGrids = Math.ceil(texSize.h / pixelsPerGrid);
-
+  const sceneWidthInGrids = Math.ceil(sceneSize.w / pixelsPerGrid);
+  const sceneHeightInGrids = Math.ceil(sceneSize.h / pixelsPerGrid);
+  const texPixelsPerGrid = textureWidth / (sceneSize.w / pixelsPerGrid); //todo: x & y?
   //todo: max grid size
   //or if gridsize > tex size
 
-  return {pixelsPerGrid: pixelsPerGrid, texSize: texSize, sceneWidthInGrids:sceneWidthInGrids, sceneHeightInGrids: sceneHeightInGrids };
+  return { texturePixelsPerGrid: texPixelsPerGrid,
+    scenePixelsPerGrid: pixelsPerGrid,
+    sceneSize: sceneSize,
+    texSize: {w:textureWidth, h:textureHeight},
+    sceneWidthInGrids:sceneWidthInGrids, sceneHeightInGrids: sceneHeightInGrids };
 }
+
+/**
+ * Simple sleep method.
+ * @param {number} ms 
+ */
+export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+export function isNullNumber(number){return number==NaN||number==undefined||number==null;}

@@ -30,8 +30,8 @@ export default class CreateLayerDialog extends FormApplication {
   // Return data to the template
     return {
       gridSize: 1,
-      sceneWidth: 5000,
-      sceneHeight: 5000,
+      sceneWidth: 50,
+      sceneHeight: 50,
       backgroundColor: "#FFFFFF",
     };
   }

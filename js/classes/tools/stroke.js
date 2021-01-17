@@ -37,8 +37,9 @@ export class Stroke {
     }
     get isEmpty(){ return this.xyCoords.length<1 || this.parseIndex >= this.xyCoords.length; }
 }
-export class RectStroke {
+export class RectStroke extends Stroke{
     constructor(type, brushSize, color, cellBased, fromX, fromY, width, height) {
+        super(type, brushSize, color, cellBased);
         this.width = width;
         this.height = height;
     }

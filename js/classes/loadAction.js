@@ -1,8 +1,10 @@
 var pixels = require('image-pixels');
 import { data } from "jquery";
-import { calcGridImportSize, hexToColor, webToHex } from "../helpers.js";
+import { calcGridImportSize, hexToColor, isNullNumber, webToHex } from "../helpers.js";
 import { getSetting, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
+import { LayerSettings } from "./layerSettings.js";
+import { saveSceneSettings } from "./serializiation/saveload.js";
 import ToolsHandler from "./tools/toolsHandler.js";
 
 export default class LoadAction {
@@ -18,9 +20,14 @@ export default class LoadAction {
    * @param {LayerSettings} settings 
    */
     async Perform(settings) {
-        //console.log(settings);
+        console.log(settings);
         console.log("PERFORMING ACTION!");
-
+        //Sanity check on incoming settings
+        if(isNullNumber(settings.sceneWidth)||settings.sceneWidth<1){console.error("LayerSettings.sceneWidth is invalid");}
+        if(isNullNumber(settings.sceneHeight)||settings.sceneHeight<1){console.error("LayerSettings.sceneHeight is invalid");}
+        if(isNullNumber(settings.textureWidth)||settings.textureWidth<1){console.error("LayerSettings.textureWidth is invalid");}
+        if(isNullNumber(settings.textureHeight)||settings.textureHeight<1){console.error("LayerSettings.textureHeight is invalid");}
+        if(isNullNumber(settings.desiredGridSize)||settings.desiredGridSize<1){console.error("LayerSettings.desiredGridSize is invalid");}
 
         /* Calculating Grid & Texture Size
         We need to define how big the grid is in relation to the source texture.
@@ -44,29 +51,36 @@ export default class LoadAction {
         */
 
         //Calculate what size the grid and texture should be
-        let desiredGridSize = settings.desiredGridSize;//50 + Math.floor(Math.random() * 150);
-        const gridData = calcGridImportSize(desiredGridSize, settings.sourceTexWidth, settings.sourceTexHeight);
+        let desiredGridSize = settings.desiredGridSize;
+        //Calculate what size the scene (and its grid) should be
+        const gridData = calcGridImportSize(desiredGridSize,
+            settings.textureWidth, settings.textureWidth,
+            settings.sceneWidth, settings.sceneHeight);
 
-        //lets figure out some good scene dimensions, based on grid
         console.log(gridData);
-
-        //Rescale the grid if needed
-        const sceneInGrids = 50;
         let curScene = game.scenes.get(canvas.scene.data._id);
-        console.log(curScene.data);
+        
+        //We might need to update the scene to fit the new desired specifications
+        //This is problematic, but we have functions that will kick in and try to repair any damage caused.
+        //Expect CanvasInit_On hook to be called.
+        //Non-GM clients obviously dont need to rescale the scene, this is only nessesary when the GM creates the initial layer object
         let didRescale = false;
-        if(game.user.isGM) //clients dont need to rescale the scene, this is only nessesary when the GM creates the initial layer object
+        if(game.user.isGM) 
         {
-            didRescale = await this._rescaleWorld(gridData.pixelsPerGrid, sceneInGrids);
+            console.log(gridData);
+            canvas.drawLayer.isSetup=false;
+            didRescale = await this._rescaleWorld(gridData.scenePixelsPerGrid,
+                gridData.sceneWidthInGrids, gridData.sceneHeightInGrids);
         }
         
         
-        
         //Read the texture from the buffer, and scale it if nessesary
-        const ts = gridData.texSize;
+        const sceneSize = gridData.sceneSize;
+        const texSize = gridData.texSize;
         const layer = canvas.drawLayer;
         const pm = layer.pixelmap;
 
+        if(didRescale) { await layer.init(); }
         /*There are two ways we can use the loaded texture here
 
         A): We simply load the source texture (not changing its size) and apply it on the sprite. The sprite then handles the rescaling of the texture.
@@ -79,70 +93,55 @@ export default class LoadAction {
         For the moment, I am going to go with option A, since it keeps things simple. If I down the line want to do something like complex like Scenario C up in the 'Calculating Grid & Texture Size' section, option B might be better.
         */
 
-        if(didRescale) {
-            await layer.init();
-        }
-
+        
+        //If buffer was gained from an image file
         if(settings.hasSourceTexture)
         {
-            
             const presampleTexture = false;
             if(!presampleTexture){ //Option A
-                //We want the pixelmap to just cache the texture as it is
-                pm.ReadFromBuffer(settings.buffer, settings.sourceTexWidth, settings.sourceTexHeight, true);
+                //We want the pixelmap to just cache the buffer as it is
+                pm.ReadFromBuffer(settings.buffer, settings.bufferWidth, settings.bufferHeight, true);
                 console.log("Loaded source texture straight from buffer");
             }
             else{ //Option B
-                //We want the pixelmap to rescale the texture and cache that
-                pm.ReadFromBuffer_Scaled(settings.buffer, settings.sourceTexWidth, settings.sourceTexHeight, ts.w, ts.h, true);
+                //We want the pixelmap to rescale the buffer and cache that
+                pm.ReadFromBuffer_Scaled(settings.buffer, settings.bufferWidth, settings.bufferHeight, texSize.w, texSize.h, true);
                 console.log("Loaded source texture and scaled it to fit our layer");
             }
         }
-        else if(settings.loadFromBuffer){
+        //If we only have a buffer from somewhere, and we want to use it
+        else if(settings.loadFromBuffer) {
             pm.ReadFromBuffer(settings.buffer, settings.bufferWidth, settings.bufferHeight, true);
-            console.log("Loaded source texture straight from buffer");
         }
         else {
             console.log("No source texture was defined, filling it in with the background color instead");
             if(settings.backgroundColor===null||settings.backgroundColor===undefined)
             { settings.backgroundColor = "#ff00ff"; console.log("Filled in with default background color, since no backgroundcolor was defined");}
             const col = hexToColor(webToHex(settings.backgroundColor));
-            pm.Reform(500,500, col, true);
+            pm.Reform(texSize.w, texSize.h, col, true);
         }
 
-        //The actual rendered sprite object (PIXI.Sprite) needs to be rescaled to match the canvas
-        //Strangely enough, a correctly scaled sprite appears 50% too big in relation to the grid, therefore we need to scale it down to 66.6%
-        
-        //layer.layer.width = ts.w * (2/3);
-        //layer.layer.height = ts.h * (2/3);
-        
-
-        //Bug/problem: the scene adds padding ontop of the scene dimensions we provided. We need to take that into account when we position our sprite
-        
-
-        //Problem: when the scene resizes, our sprite may not line up correctly. TEST THIS!
-        
-        
-        //Then position the sprite and stretch it correctly
-        if(layer.layer===undefined){console.error("drawLayer.layer is undefined! What is going on?");}
-        
+        await this.sleep(100);
+        //Now we can set the layer sprite as visible
         layer.SetVisible(true);
-       
+        //And then ofcourse make sure it is properly positioned
         layer.reposition();
+        layer.isSetup = true; //Allows us to interact with the layer using the cursor
 
+        console.log(layer);
         //What settings to we want to save in the scene?
         //image name, so we can find the image file later
         //the desired grid size (pixels per grid)
         //source texture size (its saved in the texture itself)
-        
 
-
-        layer.isSetup = true;
-        console.log("set isSetup true");
-
+        let output = { desiredGridSize: gridData.scenePixelsPerGrid,
+            textureWidth: texSize.w, textureHeight: texSize.h,
+            sceneWidth: sceneSize.w, sceneHeight: sceneSize.h };
+        LayerSettings.pixelsPerGrid = gridData.texturePixelsPerGrid;
         if(!game.user.isGM) { return; }
-        setSetting("drawlayerinfo", {imgname:settings.textureFilename, desiredGridSize: settings.desiredGridSize, hasImg: settings.hasTexture, active: true, hasBuffer: true, spriteW: pm.width, spriteH: pm.height});
-        //setSetting("buffer", layer.pixelmap.pixels); 
+        let buffer = pm.texture.encodeToPNG();
+        
+        saveSceneSettings(output, buffer);
     }
 
 
@@ -152,14 +151,21 @@ export default class LoadAction {
         });
     }  
 
-    async _rescaleWorld(pixelsPerGrid, sceneInGrids){
+    /**
+     * 
+     * @param {number} pixelsPerGrid 
+     * @param {number} sceneGridsX 
+     * @param {number} sceneGridsY 
+     */
+    async _rescaleWorld(pixelsPerGrid, sceneGridsX, sceneGridsY){
         
+        //Sanity check on parameters
         let curScene = game.scenes.get(canvas.scene.data._id);
         const oldGridSize = curScene.data.grid;
         const oldSceneWidth = curScene.data.width;
         const oldSceneHeight = curScene.data.width;
-        const newSceneWidth = pixelsPerGrid*sceneInGrids;
-        const newSceneHeight = pixelsPerGrid*sceneInGrids;
+        const newSceneWidth = pixelsPerGrid*sceneGridsX;
+        const newSceneHeight = pixelsPerGrid*sceneGridsY;
         let didRescale = false;
         if(oldGridSize!=pixelsPerGrid||oldSceneWidth!=newSceneWidth||oldSceneHeight!=newSceneHeight)
         {
@@ -168,7 +174,7 @@ export default class LoadAction {
             LoadAction.IsUpdating = true;
             console.log("Rescaling grid to " + pixelsPerGrid + "px...");
             //'width: value' will change scene dimension width
-            await curScene.update({grid: pixelsPerGrid, width:pixelsPerGrid*sceneInGrids, height:pixelsPerGrid*sceneInGrids});
+            await curScene.update({grid: pixelsPerGrid, width:pixelsPerGrid*sceneGridsX, height:pixelsPerGrid*sceneGridsY});
             LoadAction.IsUpdating = false;
             console.log("Rescale complete");
             return true;
