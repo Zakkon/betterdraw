@@ -29,3 +29,4 @@ export function defaultSettings(){
     };
     return defaults;
 }
+export function brushSizeIsDiameter() { return true; }

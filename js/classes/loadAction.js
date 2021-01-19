@@ -4,7 +4,7 @@ import { calcGridImportSize, hexToColor, isNullNumber, webToHex } from "../helpe
 import { getSetting, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
 import { LayerSettings } from "./layerSettings.js";
-import { saveSceneSettings } from "./serializiation/saveload.js";
+import { SaveLayer } from "./serializiation/saveload.js";
 import ToolsHandler from "./tools/toolsHandler.js";
 
 export default class LoadAction {
@@ -138,10 +138,11 @@ export default class LoadAction {
             textureWidth: texSize.w, textureHeight: texSize.h,
             sceneWidth: sceneSize.w, sceneHeight: sceneSize.h };
         LayerSettings.pixelsPerGrid = gridData.texturePixelsPerGrid;
+        LayerSettings.sceneWidthPerGrid = gridData.scenePixelsPerGrid;
         if(!game.user.isGM) { return; }
         let buffer = pm.texture.encodeToPNG();
         
-        saveSceneSettings(output, buffer);
+        SaveLayer(output, buffer);
     }
 
 

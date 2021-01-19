@@ -2,7 +2,7 @@ import ToolPreviewObj from "./tools/toolPreviewObj.js";
 import DrawingHistory from "./drawingHistory.js";
 import DrawLayer from "./drawlayer.js";
 import ToolsHandler from "./tools/toolsHandler.js";
-import { saveLayer } from "./serializiation/saveload.js";
+import { QuicksaveLayer, saveLayer } from "./serializiation/saveload.js";
 
 export default class SimpleDrawLayer extends DrawLayer {
 
@@ -143,7 +143,7 @@ export default class SimpleDrawLayer extends DrawLayer {
         if(event.which === 83 && event.ctrlKey) {
             event.stopPropagation();
             console.log("Saving layer...");
-            saveLayer(canvas.drawLayer, "test");
+            QuicksaveLayer();
         }
 
         // React to ctrl+z

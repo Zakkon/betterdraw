@@ -1,10 +1,11 @@
-import { getUserSetting } from "../../settings";
+import { brushSizeIsDiameter, getUserSetting } from "../../settings";
 import { webToHex } from "../../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
 import { PaintSyncer } from "./paintSyncer";
 import { NetSyncer } from "../netSyncer";
+import { LayerSettings } from "../layerSettings";
 
 export default class BrushTool extends DrawTool {
     
@@ -50,10 +51,14 @@ export default class BrushTool extends DrawTool {
     onPointerMove(p, pixelPos, e) {
         const size = getUserSetting('brushSize');//this.brushSize;
         const preview = this.getPreviewObj();
-        preview.width = size * 2;
-        preview.height = size * 2;
+        const useDiameter = brushSizeIsDiameter();
+        preview.transform.scale.x = 1;
+        preview.transform.scale.y = 1;
+        preview.width = ((size * LayerSettings.sceneWidthPerGrid) / preview.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        preview.height = ((size * LayerSettings.sceneWidthPerGrid) / preview.parent.transform.scale.y) / LayerSettings.pixelsPerGrid;
         preview.x = p.x;
         preview.y = p.y;
+        //console.log(preview);
         // If drag operation has started
         if (this.op) {
             if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved

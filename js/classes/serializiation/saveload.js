@@ -1,34 +1,7 @@
-import { setSetting } from "../../settings";
+import { getSetting, setSetting } from "../../settings";
 
-export function loadJSON(path) {
-
-    const a = () => new Promise( resolve => {
-        (async() => {
-            let response = await fetch('/basic-paint/uploaded/image.png');
-            let json = await response.json();
-            console.log(json);
-            resolve( json );
-        })();
-    } );
-    a().then( ( json ) => { });
-}
-export async function loadJSONasync(path) {
-    let response = await fetch(path);
-    let json = await response.json();
-    console.log(json);
-    return json;
-}
-
-export function loadLayer(path)
-{
-    
-}
-export function loadModuleSettings(settingsName){
-    //return a ClientSettings
-    return game.settings.get("betterdraw", settingsName);
-}
-
-export function saveSceneSettings(settings, buffer) {
+export function SaveLayer(settings, buffer) {
+    //We will save this layer as an image file
     const id = canvas.scene.data._id;
     const imgname = id + ".png"
     
@@ -37,17 +10,19 @@ export function saveSceneSettings(settings, buffer) {
     settings.imgname = imgname;
     setSetting("drawlayerinfo", settings);
 
-    
+    //Clear any strokes saved to scene flags, as they wont be needed anymore
+    setSetting("strokes", null);
+
+    //Then save the image (png for now)
     const dataPath = "betterdraw/uploaded";
     savePNG(buffer, imgname, dataPath)
 }
-export function saveLayer(layerObj, path) {
-
-    const pixelmap = layerObj.pixelmap;
-    const buffer = pixelmap.texture.encodeToPNG();
-    savePNG(buffer, "dungeon.png", "betterdraw/uploaded");
+export function QuicksaveLayer() {
+    let settings = getSetting("drawlayerinfo");
+    let buffer = canvas.drawLayer.pixelmap.texture.encodeToPNG();
+    SaveLayer(settings, buffer);
 }
-export async function savePNG(buffer, fileName, path){
+async function savePNG(buffer, fileName, path){
     const file = new File([buffer], fileName, {type: "image/png"});
     await saveInData(file, path);
 }

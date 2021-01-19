@@ -4,6 +4,7 @@ import DrawTool from "./drawTool";
 import { getUserSetting, getSetting } from "../../settings";
 import RectTool from "./rectTool";
 import GridBrushTool from "./gridBrushTool";
+import EyedropperTool from "./eyedropperTool";
 
 export default class ToolsHandler {
 
@@ -17,6 +18,7 @@ export default class ToolsHandler {
     this.tools.push(new BrushTool("brush", "circle"));
     this.tools.push(new GridBrushTool("grid", "grid"));
     this.tools.push(new RectTool("rect", "rect"));
+    this.tools.push(new EyedropperTool("eyedropper", "eyedropper"));
     this.activeTool = "brush";
     this.toolPreviews = [];
   }

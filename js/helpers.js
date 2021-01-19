@@ -53,6 +53,28 @@ export function hexToColor(hex) { //Wants a color in a 0x000000 format
   if(chunks.length>3){c.a = chunks[3];}
   return c;
 }
+/**
+ * Returns a color in 0xffffff format
+ * @param {Color32} color 
+ */
+export function colorToHex(color) {
+ 
+   const a = GetHex(Math.floor(color.r / 16));
+   const b = GetHex(Math.round(color.r % 16));
+   const c = GetHex(Math.floor(color.g / 16));
+   const d = GetHex(Math.round(color.g % 16));
+   const e = GetHex(Math.floor(color.b / 16));
+   const f = GetHex(Math.round(color.b % 16));
+ 
+   const z = a + b + c + d + e + f;
+ 
+   return "0x" + z;
+}
+export function GetHex (decimal) {
+	let alpha = "0123456789ABCDEF";
+	let out = "" + alpha[decimal];
+	return out;
+};
 
 /**
  * Converts an integer percent (0-100) to a hexadecimal greyscale color

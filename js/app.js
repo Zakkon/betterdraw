@@ -3,9 +3,9 @@ import LoadAction from "./classes/loadAction.js";
 import DrawLayer from "./classes/drawlayer.js";
 import SimpleDrawLayer from "./classes/simpledraw.js";
 import ToolsHandler from "./classes/tools/toolsHandler.js";
-import { loadJSONasync, saveSceneSettings } from "./classes/serializiation/saveload.js";
+import { SaveLayer } from "./classes/serializiation/saveload.js";
 var pixels = require('image-pixels');
-import { calcGridImportSize, sleep } from "./helpers.js";
+import { sleep } from "./helpers.js";
 import { getSetting, setSetting, setUserSetting } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 import { NetSyncer } from "./classes/netSyncer.js";
@@ -44,29 +44,15 @@ Hooks.on("canvasInit", async function() {
   //Do any test drawing functions here
 });
 Hooks.on("ready", async function() {
-  //await setSetting("strokes", null);
   NetSyncer.onReady();
   game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
 
-  //await loadFromSceneFlags();
-
-  console.log("SCENE:");
-  console.log(canvas.scene);
-  if(canvas.scene===null){return;}
+  if(canvas.scene===null) { return; }
   canvas.drawLayer.SetVisible(true);
-  await tryGet3(); //Load the image file to use as a background
-  //Any strokes made after this texture was last saved will be drawn ontop
-
-
-  /*let strokeHistory = await getSetting("strokes");
-  if(!strokeHistory){return;}
-  let strokes = NetSyncer.DecodeStrokes(strokeHistory);
-  //Draw the strokes onto the pixelmap
-  canvas.drawLayer.pixelmap.DrawStrokes(strokes, true); */
-
-
+  await TryLoadLayer(); //Load the image file to use as a background
   
 });
+
 function recieveNetMsg(data){
   //console.log("MSG RECIEVED!");
   //console.log(data);
@@ -98,7 +84,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         controls.push({
           name: 'DrawLayer',
           title: "BetterDraw",
-          icon: 'fas fa-cloud',
+          icon: 'fas fa-pencil-alt',
           layer: 'DrawLayer',
           tools: [
             {
@@ -111,7 +97,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
               title: game.i18n.localize('SIMPLEFOG.gridTool'),
               icon: 'fas fa-border-none',
             },
-            {
+            /* {
               name: 'box',
               title: game.i18n.localize('SIMPLEFOG.boxTool'),
               icon: 'far fa-square',
@@ -120,8 +106,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
               name: 'ellipse',
               title: game.i18n.localize('SIMPLEFOG.ellipseTool'),
               icon: 'far fa-circle',
-            },
+            }, */
             {
+              name: 'eyedropper',
+              title: "Eyedropper",
+              icon: 'custom-icon eyedropper-icon',
+            },
+           /*  {
               name: 'sceneConfig',
               title: game.i18n.localize('SIMPLEFOG.sceneConfig'),
               icon: 'fas fa-cog',
@@ -129,11 +120,11 @@ Hooks.on('getSceneControlButtons', (controls) => {
                 new SimplefogConfig().render(true);
               },
               button: true,
-            },
+            }, */
             {
               name: 'addLayer',
               title: "Add Layer",
-              icon: 'fas fa-cloud',
+              icon: 'fa fa-plus',
               onClick: () => {
                 new CreateLayerDialog().render(true);
               },
@@ -159,9 +150,10 @@ Hooks.on('renderSceneControls', (controls) => {
     if (controls.activeControl == 'DrawLayer' && controls.activeTool != undefined) {
       // Open brush tools if not already open
       //console.log("Open brush tools");
-      if (!$('#simplefog-brush-controls').length) new BrushControls().render(true);
+      if (!$('#simplefog-brush-controls').length) { canvas.drawLayer.brushControls = new BrushControls().render(true); }
       // Set active tool
       const tool = controls.controls.find((control) => control.name === 'DrawLayer').activeTool; //get type of tool from controlBtn
+      //canvas.drawLayer.brushControls.configureElements(tool);
       canvas.drawLayer.setActiveTool(tool);
     }
     // Switching away from layer
@@ -194,38 +186,40 @@ function setBrushControlPos() {
 Hooks.on('renderBrushControls', setBrushControlPos);
 Hooks.on('renderSceneNavigation', setBrushControlPos);
 
-
-function tryUpload(file) {
-  var source = "data";
-  let response;
-  if (file.isExternalUrl) { response = {path: file.url}}
-  else { response = FilePicker.upload(source, "basic-paint/uploaded", file, {}); }
-  console.log(response);
-}
-async function tryGet3() {
+async function TryLoadLayer() {
   //Load settings, or create new ones if none were found
   let settings = getSetting("drawlayerinfo");
-  if(!settings) {
-  //Lets create a LayerSettings that wishes to represent each pixel in the image as its own grid
-  settings = new LayerSettings();
-  //We would like the sprite to have the exact same size (in pixels) as our texture
-  settings.spriteWidth = width;
-  settings.spriteHeight = height;
-  //And each grid cell to be one pixel large (impossible in Foundry, will work around that later on)
-  settings.desiredGridSize = 1;
-  };
+  const isGM = game.user.isGM;
+  //Only the GM can auto-create layer settings
+  if(!settings && isGM) {
+    //Lets create a LayerSettings that wishes to represent each pixel in the image as its own grid
+    settings = new LayerSettings();
+    //We would like the sprite to have the exact same size (in pixels) as our texture
+    settings.spriteWidth = width;
+    settings.spriteHeight = height;
+    //And each grid cell to be one pixel large (impossible in Foundry, will work around that later on)
+    settings.desiredGridSize = 1;
+  }
+  else if(!settings && !isGM) { return; } //If not GM and no settings exist, stop here
 
   let e = null;
+  //If our settings specify an image file, we load it and build the settings around it
   if(settings.hasimg) {
     //Grab an image file from the server
     //data = buffer, width = buffer width, height = buffer height
     var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imgname);
     e = await LayerSettings.LoadFromBuffer(settings, data, width, height);
   }
-  else {
-    e = await LayerSettings.LoadFromSettings(settings);
-  }
+  else { e = await LayerSettings.LoadFromSettings(settings); }
 
+  //Then hand over the settings to the loadaction
   let task = new LoadAction();
   await task.Perform(e);
+
+  //Any strokes made after this texture was last saved will be drawn ontop
+  let strokeHistory = await getSetting("strokes");
+  if(!strokeHistory) { return; }
+  //let strokes = NetSyncer.DecodeStrokes(strokeHistory);
+  //Draw the strokes onto the pixelmap
+  canvas.drawLayer.pixelmap.DrawStrokeParts(strokeHistory, true);
 }
