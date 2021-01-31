@@ -1,5 +1,12 @@
 >painting out of bounds will wrap the brush to the opposite side of the texture, and draw there. Fixed?
 >brushtool update loop breaks on creation of new layer.
 >swithing token vision on or off paints part of the map completely red. fixed.
->brush breaks permanently when a stroke wanders outside of the sprite
->dropdown click event fails to find the value-lbl of the dropdown menu
+>brush breaks permanently when a stroke wanders outside of the sprite (happens when error inside loop). fixed.
+>dropdown click event fails to find the value-lbl of the dropdown menu. fixed?
+>dropdown might have trouble finding stuff via jQuery
+>dropdown arrow in brush size needs graphical redesign
+>dropdown brush size should matter when painting in grid mode
+>grid cursor object needs correct shape & positioning
+>set padding in layer creation window
+>netsyncing needs to be tested, especially hotjoining
+>redo (ctrl+Y)?

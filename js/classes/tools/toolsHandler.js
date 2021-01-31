@@ -26,6 +26,7 @@ export default class ToolsHandler {
     //Destroy any objs of they are already existing
     this.destroyToolPreviews();
     console.log("Creating tool preview objs");
+
     let ellipse = new ToolPreviewObj("ellipse");
     ellipse.setActive(false);
     layerobj.addChild(ellipse);
@@ -82,10 +83,10 @@ export default class ToolsHandler {
     if (toolName === 'brush') {
       this.getToolPreview("ellipse").setActive(true);
       //this.ellipsePreview.visible = true;
-      $('#simplefog-brush-controls #brush-size-container').show();
+      $('#betterdraw-brush-controls #brush-size-container').show();
     }
     else {
-      $('#simplefog-brush-controls #brush-size-container').hide();
+      $('#betterdraw-brush-controls #brush-size-container').hide();
     }
     //Grid shaped brush
     if (toolName === 'grid') {

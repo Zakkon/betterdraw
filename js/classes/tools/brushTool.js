@@ -50,20 +50,16 @@ export default class BrushTool extends DrawTool {
     }
     onPointerMove(p, pixelPos, e) {
         const size = getUserSetting('brushSize');//this.brushSize;
+        //Move the brush cursor object
         const preview = this.getPreviewObj();
-        const useDiameter = brushSizeIsDiameter();
-        preview.transform.scale.x = 1;
-        preview.transform.scale.y = 1;
-        preview.width = ((size * LayerSettings.sceneWidthPerGrid) / preview.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
-        preview.height = ((size * LayerSettings.sceneWidthPerGrid) / preview.parent.transform.scale.y) / LayerSettings.pixelsPerGrid;
-        preview.x = p.x;
-        preview.y = p.y;
-        //console.log(preview);
-        // If drag operation has started
+        this.positionCursor(preview, p.x, p.y, size, size);
+
+        //If we have begun our stroke
         if (this.op) {
             if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
             this.lastPos = {x:pixelPos.x, y:pixelPos.y};
-            this.syncer.LogBrushStep(pixelPos.x, pixelPos.y);
+            //Add these coordinates to the stroke
+            this.syncer.LogStrokeStep(pixelPos.x, pixelPos.y);
         }
     }
     onPointerUp(p, pixelPos,e) {
@@ -79,16 +75,19 @@ export default class BrushTool extends DrawTool {
         const isCellMode = false; //find from somewhere
         const brushSize = getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
-        console.log(this.type);
-        if(isCellMode){
-            this.syncer.LogBrushStart_Cells(this.type, this.brushColor, brushSize);
-        }
-        else{
-            this.syncer.LogBrushStart(this.type, this.brushColor, brushSize);
-        }
+        //Start a new stroke. We will add coordinates to this stroke with LogStrokeStep later
+        this.syncer.LogStrokeStart(this.type, this.brushColor, brushSize);
     }
     interruptStroke(){
-        if(this.op){ console.log("logbrushend"); this.syncer.LogBrushEnd(); } //logHistory();
+        if(this.op){ this.syncer.LogStrokeEnd(); } //logHistory();
         this.op = false;
+    }
+    positionCursor(cursor, x, y, width, height){
+        cursor.transform.scale.x = 1;
+        cursor.transform.scale.y = 1;
+        cursor.width = ((width * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        cursor.height = ((height * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.y) / LayerSettings.pixelsPerGrid;
+        cursor.x = x;
+        cursor.y = y;
     }
 }

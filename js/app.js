@@ -89,22 +89,22 @@ Hooks.on('getSceneControlButtons', (controls) => {
           tools: [
             {
               name: 'brush',
-              title: game.i18n.localize('SIMPLEFOG.brushTool'),
+              title: "Brush",
               icon: 'fas fa-paint-brush',
             },
             {
               name: 'grid',
-              title: game.i18n.localize('SIMPLEFOG.gridTool'),
+              title: "Grid",
               icon: 'fas fa-border-none',
             },
             /* {
               name: 'box',
-              title: game.i18n.localize('SIMPLEFOG.boxTool'),
+              title: "Rectangle",
               icon: 'far fa-square',
             },
             {
               name: 'ellipse',
-              title: game.i18n.localize('SIMPLEFOG.ellipseTool'),
+              title: "Ellipse",
               icon: 'far fa-circle',
             }, */
             {
@@ -114,10 +114,10 @@ Hooks.on('getSceneControlButtons', (controls) => {
             },
            /*  {
               name: 'sceneConfig',
-              title: game.i18n.localize('SIMPLEFOG.sceneConfig'),
+              title: "Config",
               icon: 'fas fa-cog',
               onClick: () => {
-                new SimplefogConfig().render(true);
+                new BetterdrawConfig().render(true);
               },
               button: true,
             }, */
@@ -150,7 +150,7 @@ Hooks.on('renderSceneControls', (controls) => {
     if (controls.activeControl == 'DrawLayer' && controls.activeTool != undefined) {
       // Open brush tools if not already open
       //console.log("Open brush tools");
-      if (!$('#simplefog-brush-controls').length) { canvas.drawLayer.brushControls = new BrushControls().render(true); }
+      if (!$('#betterdraw-brush-controls').length) { canvas.drawLayer.brushControls = new BrushControls().render(true); }
       // Set active tool
       const tool = controls.controls.find((control) => control.name === 'DrawLayer').activeTool; //get type of tool from controlBtn
       //canvas.drawLayer.brushControls.configureElements(tool);
@@ -163,7 +163,7 @@ Hooks.on('renderSceneControls', (controls) => {
       
 
       // Remove brush tools if open
-      const bc = $('#simplefog-brush-controls');
+      const bc = $('#betterdraw-brush-controls');
       if (bc) bc.remove();
     }
   }
@@ -175,7 +175,7 @@ Hooks.on('renderSceneControls', (controls) => {
  * Sets Y position of the brush controls to account for scene navigation buttons
  */
 function setBrushControlPos() {
-  const bc = $('#simplefog-brush-controls');
+  const bc = $('#betterdraw-brush-controls');
   if (bc) {
     const h = $('#navigation').height();
     bc.css({ top: `${h + 30}px` });

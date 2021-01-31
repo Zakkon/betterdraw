@@ -16,15 +16,27 @@ export default class ToolPreviewObj extends PIXI.Graphics {
             this.visible = true;
             this.alpha = previewAlpha;
         }
+        else if(brushType=="grid") {
+          this._rect(defaultColor, 0,0, 100,100);
+          this.zIndex = 10;
+          this.visible = true;
+          this.alpha = previewAlpha;
+        }
     }
     _ellipse (fill, x,y, width,height) {
-
         this.beginFill(fill);
         this.drawEllipse(0,0,width,height);
         this.endFill();
         this.x = x;
         this.y = y;
     }
+    _rect (fill, x,y, width,height) {
+      this.beginFill(fill);
+      this.drawRect(0,0,width,height);
+      this.endFill();
+      this.x = x;
+      this.y = y;
+  }
 
     brush(data) {
         // Get new graphic & begin filling

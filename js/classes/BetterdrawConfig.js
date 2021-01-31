@@ -1,7 +1,7 @@
 import { webToHex, hexToWeb } from '../helpers.js';
-import { getUserSetting, setUserSetting, setSetting, getSetting } from "../../js/settings.js";
+import { getUserSetting, setUserSetting, setSetting, getSetting } from "../settings.js";
 
-export default class SimplefogConfig extends FormApplication {
+export default class BetterdrawConfig extends FormApplication {
   static get defaultOptions() {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
@@ -12,8 +12,8 @@ export default class SimplefogConfig extends FormApplication {
       editable: game.user.isGM,
       width: 500,
       template: 'modules/betterdraw/templates/scene-config.html',
-      id: 'simplefog-scene-config',
-      title: game.i18n.localize('Simplefog Options'),
+      id: 'betterdraw-scene-config',
+      title: game.i18n.localize('Betterdraw Options'),
     });
   }
 
@@ -69,7 +69,7 @@ export default class SimplefogConfig extends FormApplication {
     // If save button was clicked, close app
     if (event.submitter && event.submitter.name === 'submit') {
       Object.values(ui.windows).forEach((val) => {
-        if (val.id === 'simplefog-scene-config') val.close();
+        if (val.id === 'betterdraw-scene-config') val.close();
       });
     }
 

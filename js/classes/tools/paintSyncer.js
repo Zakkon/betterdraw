@@ -13,58 +13,51 @@ export class PaintSyncer {
      */
     get activeStroke() {return this.strokes[this.strokes.length-1];}
     /**
+     * Creates a new stroke using provided parameters, making it the active one.
      * @param {string} type
      * @param {Color32} color 
      * @param {number} brushSize 
+     * @param {boolean} cellBased
      */
-    LogBrushStart(type, color, brushSize) {
+    LogStrokeStart(type, color, brushSize, cellBased=false) {
         this.strokes.forEach(function(s){s.isActive=false;});
-        var stroke = new Stroke(type, brushSize, color, false);
+        var stroke = new Stroke(type, brushSize, color, cellBased);
         stroke.isActive = true;
         this.strokes.push(stroke);
     }
     /**
-     * @param {string} type
-     * @param {Color32} color 
-     * @param {number} brushSize 
-     */
-    LogBrushStart_Cells(type, color, brushSize){
-        this.strokes.forEach(function(s){s.isActive=false;});
-        var stroke = new Stroke(type, brushSize, color, true); stroke.isActive = true;
-        this.strokes.push(stroke);
-    }
-    /**
-     * Log a point in the stroke.
+     * Log a point in the stroke using integer pixel coordinates.
      * @param {number} x 
      * @param {number} y 
      */
-    LogBrushStep(x, y) { //integers
+    LogStrokeStep(x, y) {
         if(this.strokes.length<1) { console.error("no active stroke to add steps to"); return; }
         this.activeStroke.AddCoords({x:x, y:y});
     }
     /**
-     * 
-     * @param {number} x 
-     * @param {number} y 
-     * @param {{cellRealSize:number}} gridSettings 
+     * Mark the active stroke as having ended.
      */
-    LogBrushStep_Cells(pixelX, pixelY, gridSettings){
-        if(this.strokes.length<1){return;}
-        const cX = Math.floor(pixelX / gridSettings.cellRealSize);
-        const cY = Math.floor(pixelY / gridSettings.cellRealSize);
-        this.activeStroke.AddCoords({x:cX, y:cY});
-    }
-    LogBrushEnd(){
+    LogStrokeEnd(){
         if(this.strokes.length<1){return;}
         this.activeStroke.isActive = false;
         NetSyncer.onStrokeEnd();
     }
-    LogRect(fromX, fromY, width, height, cellBased, brushSize, color){
-        this.strokes.forEach(function(s){s.isActive=false;});
-        var stroke = new RectStroke("rect", brushSize, color, cellBased, fromX, fromyY, width, height);
+    /**
+     * Creates a new RectStroke and makes it the active one.
+     * @param {number} fromX 
+     * @param {number} fromY 
+     * @param {number} width 
+     * @param {number} height
+     * @param {number} brushSize 
+     * @param {Color32} color 
+     */
+    LogRect(fromX, fromY, width, height, brushSize, color){
+        this.strokes.forEach(function(s) { s.isActive=false; });
+        var stroke = new RectStroke("rect", brushSize, color, cellBased, fromX, fromY, width, height);
         this.strokes.push(stroke);
     }
     /**
+     * 
      * @return {{type:string, color:Color32, cellBased:boolean}[]}
      */
     GetReadyStrokeParts(){
