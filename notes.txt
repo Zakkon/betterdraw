@@ -7,28 +7,13 @@ procedure:
 --------
 SYNCING
 --------
-Lazy Way, relying on scene flags (deprecated):
->When layer is created, we put all the layer info (including texture buffer) in the scene flags
->When clients join, they will already know the scene flags, and be able to reproduce the texture
->GM will need to update the buffer at the end of every stroke, to keep the texture updated
->clients will have their updateScene hook called, and use that fresh buffer to rebuild the texture
-Problems:
-setting scene flags is quite slow, and *will* cause framedrops when applying the buffer
-------------------------
-Intermediate Way, using scene flags & socket messages (deprecated):
->Works the same way as Lazy Way, but we send StrokeParts during the stroke through the socket
->clients recieving the StrokeParts can replicate the drawing in realtime on their texture
->the StrokeParts needs a timestamp, which is compared to the timestamp of the most recent scene flags update, stored in the scene flags itself
->if the scene flags update is more recent then the StrokePart, that means the StrokePart is outdated and we can simply use the buffer within the scene flags instead
------------------------
-NEW DEVELOPMENT, SCENE FLAGS CANNOT BE USED
-Storing the texture buffer in sceneFlags causes tremendous lag when moving characters around on the map
------------------------
-Using an image file instead of scene flags (in development)
->Non-GM client can load a texture straight from the server and render that onto the layer object
->GM handles saving/updating that image file when it deems nessesary
->GM will cache StrokeParts in the scene flags
->When the GM finally updates the image file, all StrokeParts are also deleted, since they are out of date. Clients then load from the image file
+Module keeps a hard copy of the layer image as an image file that lives in the module data folder on the server
+>Non-GM clients can read that file and render it on the layer canvas
+>Ontop of that, any changes made since the last save (of the image file) is stored in the scene flags, as StrokeParts
+>When a GM uses a brush, StrokeParts are saved in the scene flags, aswell as sent directly through sockets to the clients
+>Non-GM clients recieve these StrokeParts and render them on the layer canvas
+>Non-GM that are hotjoining can recreate the current texture by readin the image file, and then applying all StokeParts cached in the scene flags
+>When the GM finally updates the image file, all StrokeParts are also deleted, since they are out of date. Clients then load from the image file and render that on their layer canvas
 -----------------------
 SCENE STARTUP BUGS:
 -----------------

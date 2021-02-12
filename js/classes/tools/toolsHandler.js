@@ -5,11 +5,23 @@ import { getUserSetting, getSetting } from "../../settings";
 import RectTool from "./rectTool";
 import GridBrushTool from "./gridBrushTool";
 import EyedropperTool from "./eyedropperTool";
+import { getDrawLayer } from "../../helpers";
 
 export default class ToolsHandler {
 
+  /**
+   * @returns {ToolsHandler}
+   */
+  static get singleton()
+  {
+    let th = canvas.betterDraw_ToolsHandler;
+    if(th==null){console.error("ToolsHandler singleton is null!");}
+    return th;
+  }
+  //Where do we store the singleton?
+
   constructor(){
-    ToolsHandler.singleton = this;
+    canvas.betterDraw_ToolsHandler = this;
     this.createAllTools();
   }
 
@@ -51,6 +63,16 @@ export default class ToolsHandler {
     }
     this.toolPreviews = [];
   }
+  validateHealth(){
+    //Check that our tool previews exist
+    if(this.toolPreviews==null||this.toolPreviews==undefined||this.toolPreviews.length<1){
+      //Our tool previews are missing for some reason. Time to reconstruct them
+      console.error("Tool Preview Objs seem to have been destroyed! Repairing...");
+      let layer = getDrawLayer();
+      this.createToolPreviews(layer);
+    }
+    
+  }
   get curTool(){return this.getTool(this.activeTool);}
 
   getTool(name){
@@ -61,12 +83,19 @@ export default class ToolsHandler {
     console.error("Could not find a tool with the name " + name);
     return null;
   }
-  getToolPreview(name){
+  /**
+   * 
+   * @param {string} name
+   * @return {ToolPreviewObj}
+   */
+  getToolPreview(name) {
+    this.validateHealth();
     for(let i = 0; i < this.toolPreviews.length; ++i)
     {
       if(this.toolPreviews[i].name == name){return this.toolPreviews[i];}
     }
-    console.error("Could not find a tool preview object with the name " + name);
+    console.error("Could not find a tool preview object with the name " + name+". Tool previews available are: ");
+    console.error(this.toolPreviews);
     return null;
   }
 

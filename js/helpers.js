@@ -1,4 +1,6 @@
 import Color32 from "./classes/color32";
+import SimpleDrawLayer from "./classes/simpledraw";
+import { getSetting, setSetting } from "./settings";
 
 /**
  * Converts web colors to base 16
@@ -206,3 +208,24 @@ export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight, s
  */
 export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 export function isNullNumber(number){return number==NaN||number==undefined||number==null;}
+export function worldPosToPixelPos(worldPos){
+  //Point in worldspace to pixel on the scene canvas
+  //Used primarily in mouse cursor transformations
+  const l = canvas.drawLayer.layer.transform;
+  let pixelPos = {x:(worldPos.x-l.position.x)/l.scale.x, y:(worldPos.y-l.position.y)/l.scale.y};
+  return pixelPos;
+}
+export function pixelPosToWorldPos(pixelPos)
+{
+  //Point on the scene canvas to point in worldspace
+  //Used primarily in mouse cursor transformations
+  const l = canvas.drawLayer.layer.transform;
+  let worldPos = {x:(pixelPos.x*l.scale.x)+l.position.x, y:(pixelPos.y*l.scale.y)+l.position.y};
+  return worldPos;
+}
+/**
+ * @return {SimpleDrawLayer}
+ */
+export function getDrawLayer(){
+  return canvas.drawLayer; //SimpleDrawLayer
+}

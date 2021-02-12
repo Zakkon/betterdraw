@@ -3,10 +3,9 @@ import LoadAction from "./classes/loadAction.js";
 import DrawLayer from "./classes/drawlayer.js";
 import SimpleDrawLayer from "./classes/simpledraw.js";
 import ToolsHandler from "./classes/tools/toolsHandler.js";
-import { SaveLayer } from "./classes/serializiation/saveload.js";
 var pixels = require('image-pixels');
-import { sleep } from "./helpers.js";
-import { getSetting, setSetting, setUserSetting } from "./settings.js";
+import { getDrawLayer, sleep } from "./helpers.js";
+import { getSetting, getFoundrySceneSettings, getStrokes, deleteStrokes } from "./settings.js";
 import { LayerSettings } from "./classes/layerSettings.js";
 import { NetSyncer } from "./classes/netSyncer.js";
 import BrushControls from "./classes/BrushControls.js";
@@ -27,19 +26,21 @@ Hooks.on("canvasInit", async function() {
   //This hook can be called on things like world grid rescale, so expect this to be called more then once
   console.log("CANVASINIT_ON");
 
-  await canvas.drawLayer.init();//Make sure we have a sprite object in the layer, and that its rendertexture is properly set, drawing from the pixelmap
+  const drawLayer = getDrawLayer();
+  await drawLayer.init();//Make sure we have a sprite object in the layer, and that its rendertexture is properly set, drawing from the pixelmap
   //We need to insert our drawLayer into the .layers of the canvas, so the game can find our drawLayer in some core functions
   let theLayers = Canvas.layers;
   theLayers.drawLayer = SimpleDrawLayer;
   Object.defineProperty(Canvas, 'layers', {get: function() { return theLayers }});
   //Set the initial visibility of the sprite
-  canvas.drawLayer.SetVisible(false);
+  drawLayer.SetVisible(false);
   await sleep(100); //Need to sleep here to ensure that layer is properly positioned
-  canvas.drawLayer.reposition();
-  canvas.drawLayer.isSetup = true; //Set isSetup to true, which tells the drawLayer that its ready to interact with stuff like cursors
-  canvas.drawLayer.layer.texture = canvas.drawLayer.pixelmap.texture; //Just to make sure the layer texture is properly set. Probably unessesary.
+  drawLayer.Reposition();
+  drawLayer.isSetup = true; //Set isSetup to true, which tells the drawLayer that its ready to interact with stuff like cursors
+  drawLayer.layer.texture = drawLayer.pixelmap.texture; //Just to make sure the layer texture is properly set. Probably unessesary.
   //Create the preview objects for the different brushes. They will live inside drawLayer.
-  ToolsHandler.singleton.createToolPreviews(canvas.drawLayer);
+  if(ToolsHandler.singleton==null){console.error("ToolsHandler could not be found!");}
+  ToolsHandler.singleton.createToolPreviews(drawLayer);
   
   //Do any test drawing functions here
 });
@@ -48,7 +49,9 @@ Hooks.on("ready", async function() {
   game.socket.on('module.betterdraw', (data) => recieveNetMsg(data));
 
   if(canvas.scene===null) { return; }
-  canvas.drawLayer.SetVisible(true);
+  const drawLayer = getDrawLayer();
+  drawLayer.SetVisible(true);
+  ToolsHandler.singleton.validateHealth();
   await TryLoadLayer(); //Load the image file to use as a background
   
 });
@@ -148,13 +151,14 @@ Hooks.on('renderSceneControls', (controls) => {
     //console.log("ActiveControl: " + controls.activeControl);
     //console.log("ActiveTool: " + controls.activeTool);
     if (controls.activeControl == 'DrawLayer' && controls.activeTool != undefined) {
+      const drawLayer = getDrawLayer();
       // Open brush tools if not already open
       //console.log("Open brush tools");
-      if (!$('#betterdraw-brush-controls').length) { canvas.drawLayer.brushControls = new BrushControls().render(true); }
+      if (!$('#betterdraw-brush-controls').length) { drawLayer.brushControls = new BrushControls().render(true); }
       // Set active tool
       const tool = controls.controls.find((control) => control.name === 'DrawLayer').activeTool; //get type of tool from controlBtn
       //canvas.drawLayer.brushControls.configureElements(tool);
-      canvas.drawLayer.setActiveTool(tool);
+      drawLayer.setActiveTool(tool);
     }
     // Switching away from layer
     else {
@@ -187,20 +191,24 @@ Hooks.on('renderBrushControls', setBrushControlPos);
 Hooks.on('renderSceneNavigation', setBrushControlPos);
 
 async function TryLoadLayer() {
+  console.log("TryLoadLayer");
   //Load settings, or create new ones if none were found
   let settings = getSetting("drawlayerinfo");
   const isGM = game.user.isGM;
+  let corruptedSettings = false;
+  let freshSave = false;
   //Only the GM can auto-create layer settings
-  if(!settings && isGM) {
-    //Lets create a LayerSettings that wishes to represent each pixel in the image as its own grid
-    settings = new LayerSettings();
-    //We would like the sprite to have the exact same size (in pixels) as our texture
-    settings.spriteWidth = width;
-    settings.spriteHeight = height;
-    //And each grid cell to be one pixel large (impossible in Foundry, will work around that later on)
-    settings.desiredGridSize = 1;
+  let settingsExist = LayerSettings.VerifySettingSanity(settings);
+
+  if(!settingsExist && isGM) {
+    console.log("Found no layer settings for this scene, creating new ones...");
+    //Assume settings were corrupted or are otherwise missing
+    //Create fresh default settings. Will probably lead to rescaling of the scene.
+    settings = LayerSettings.DefaultSettings();
+    //Delete strokes
+    deleteStrokes();
   }
-  else if(!settings && !isGM) { return; } //If not GM and no settings exist, stop here
+  else if(!settingsExist && !isGM) { return; } //If not GM and no settings exist, stop here
 
   let e = null;
   //If our settings specify an image file, we load it and build the settings around it
@@ -208,18 +216,28 @@ async function TryLoadLayer() {
     //Grab an image file from the server
     //data = buffer, width = buffer width, height = buffer height
     var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imgname);
-    e = await LayerSettings.LoadFromBuffer(settings, data, width, height);
+    if(LayerSettings.VerifyImageSanity(data, width, height)){
+        e = await LayerSettings.LoadFromBuffer(settings, data, width, height);
+    }
+    else{
+      console.error("Could not load corrupted or missing image at /betterdraw/uploaded/" + settings.imgname);
+      //Revert to fallback
+      e = await LayerSettings.LoadFromSettings(settings);
+      //Delete strokes? Not sure
+    }
   }
-  else { e = await LayerSettings.LoadFromSettings(settings); }
+  else { e = await LayerSettings.LoadFromSettings(settings); } //Basically just sets the texture size of the settings based on other settings, or image present
 
   //Then hand over the settings to the loadaction
   let task = new LoadAction();
   await task.Perform(e);
 
   //Any strokes made after this texture was last saved will be drawn ontop
-  let strokeHistory = await getSetting("strokes");
-  if(!strokeHistory) { return; }
-  //let strokes = NetSyncer.DecodeStrokes(strokeHistory);
+  let strokeHistory = await getStrokes();
+  //Check integrity of strokes here?
+  if(!LayerSettings.VerifyStrokeDataSanity(strokeHistory)){return;}
+  console.log("StrokeParts length: " + strokeHistory.length);
   //Draw the strokes onto the pixelmap
-  canvas.drawLayer.pixelmap.DrawStrokeParts(strokeHistory, true);
+  let layer = getDrawLayer();
+  layer.pixelmap.DrawStrokeParts(strokeHistory, true);
 }

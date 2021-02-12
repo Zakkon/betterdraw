@@ -8,9 +8,13 @@ var pixels = require('image-pixels');
 
 export class NetSyncer {
 //Assumes there is only one GM in the session, and that he is authorative when it comes to drawing
-    static get isMaster() { return game.user.isGM; }
     /**
-     * Called from the isMaster hook in Foundry
+     * Returns true if the local client is the GM.
+     */
+    static get isMaster() { return game.user.isGM; }
+
+    /**
+     * Called from the onReady hook in Foundry
      */
     static onReady() {
         if(!NetSyncer.isMaster)
@@ -49,14 +53,10 @@ export class NetSyncer {
      */
     static async onClientJoin() {
         if(!NetSyncer.isMaster) { return; }
-        /* console.log("Recieving texture request from client. Saving texture to file...");
-        //Save the pixelmap to an image file, then send a message to the clients telling them to read from the image file
-        let buffer = canvas.drawLayer.pixelmap.texture.encodeToPNG();
-        await savePNG(buffer, "image.png", "betterdraw/uploaded");
-        console.log("Sending texturerefreshed event...");
-        game.socket.emit('module.betterdraw', {event: "texturerefreshed", imgname: "image.png"}); */
-
-        //Send all past strokes to client
+        //A client (not the GM) has hotjoined the session
+        //GM does not need to do anything here, since the client will handle texture syncing themselves
+        //Client will load texture from server
+        //And then load strokes from scene flags, and apply them
     }
     static async onRecieveTexture() {
         if(NetSyncer.isMaster) { return; }

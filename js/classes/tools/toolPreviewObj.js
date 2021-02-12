@@ -1,4 +1,6 @@
 import { runInThisContext } from "vm";
+import { webToHex } from "../../helpers";
+import { LayerSettings } from "../layerSettings";
 
 export default class ToolPreviewObj extends PIXI.Graphics {
     constructor(brushType){
@@ -6,7 +8,7 @@ export default class ToolPreviewObj extends PIXI.Graphics {
         super();
         this.name = brushType;
         const previewAlpha =  0.4;
-        const defaultColor = 0xFFFFFF;
+        const defaultColor = webToHex(LayerSettings.DefaultBackgroundColor());
 
         
         if(brushType=="ellipse"){

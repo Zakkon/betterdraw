@@ -1,6 +1,6 @@
 var pixels = require('image-pixels');
 import { data } from "jquery";
-import { calcGridImportSize, hexToColor, isNullNumber, webToHex } from "../helpers.js";
+import { calcGridImportSize, getDrawLayer, hexToColor, isNullNumber, webToHex } from "../helpers.js";
 import { getSetting, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
 import { LayerSettings } from "./layerSettings.js";
@@ -20,14 +20,13 @@ export default class LoadAction {
    * @param {LayerSettings} settings 
    */
     async Perform(settings) {
-        console.log(settings);
-        console.log("PERFORMING ACTION!");
+        console.log("BetterDraw LoadAction");
         //Sanity check on incoming settings
-        if(isNullNumber(settings.sceneWidth)||settings.sceneWidth<1){console.error("LayerSettings.sceneWidth is invalid");}
-        if(isNullNumber(settings.sceneHeight)||settings.sceneHeight<1){console.error("LayerSettings.sceneHeight is invalid");}
-        if(isNullNumber(settings.textureWidth)||settings.textureWidth<1){console.error("LayerSettings.textureWidth is invalid");}
-        if(isNullNumber(settings.textureHeight)||settings.textureHeight<1){console.error("LayerSettings.textureHeight is invalid");}
-        if(isNullNumber(settings.desiredGridSize)||settings.desiredGridSize<1){console.error("LayerSettings.desiredGridSize is invalid");}
+        if(isNullNumber(settings.sceneWidth)||settings.sceneWidth<1){console.error("LayerSettings.sceneWidth is invalid, aborting"); this.logLayerSettings(settings); return;}
+        if(isNullNumber(settings.sceneHeight)||settings.sceneHeight<1){console.error("LayerSettings.sceneHeight is invalid, aborting"); this.logLayerSettings(settings); return;}
+        if(isNullNumber(settings.textureWidth)||settings.textureWidth<1){console.error("LayerSettings.textureWidth is invalid, aborting"); this.logLayerSettings(settings); return;}
+        if(isNullNumber(settings.textureHeight)||settings.textureHeight<1){console.error("LayerSettings.textureHeight is invalid, aborting"); this.logLayerSettings(settings); return;}
+        if(isNullNumber(settings.desiredGridSize)||settings.desiredGridSize<1){console.error("LayerSettings.desiredGridSize is invalid, aborting"); this.logLayerSettings(settings); return;}
 
         /* Calculating Grid & Texture Size
         We need to define how big the grid is in relation to the source texture.
@@ -57,7 +56,6 @@ export default class LoadAction {
             settings.textureWidth, settings.textureWidth,
             settings.sceneWidth, settings.sceneHeight);
 
-        console.log(gridData);
         let curScene = game.scenes.get(canvas.scene.data._id);
         
         //We might need to update the scene to fit the new desired specifications
@@ -67,17 +65,16 @@ export default class LoadAction {
         let didRescale = false;
         if(game.user.isGM) 
         {
-            console.log(gridData);
             canvas.drawLayer.isSetup=false;
             didRescale = await this._rescaleWorld(gridData.scenePixelsPerGrid,
-                gridData.sceneWidthInGrids, gridData.sceneHeightInGrids);
+                gridData.sceneWidthInGrids, gridData.sceneHeightInGrids, 0.05);
         }
         
         
         //Read the texture from the buffer, and scale it if nessesary
         const sceneSize = gridData.sceneSize;
         const texSize = gridData.texSize;
-        const layer = canvas.drawLayer;
+        const layer = getDrawLayer();
         const pm = layer.pixelmap;
 
         if(didRescale) { await layer.init(); }
@@ -115,36 +112,60 @@ export default class LoadAction {
         }
         else {
             console.log("No source texture was defined, filling it in with the background color instead");
-            if(settings.backgroundColor===null||settings.backgroundColor===undefined)
-            { settings.backgroundColor = "#ff00ff"; console.log("Filled in with default background color, since no backgroundcolor was defined");}
+            if(settings.backgroundColor===null||settings.backgroundColor===undefined) //Fill in with white for now?
+            { settings.backgroundColor = "#ffffff"; console.log("Filled in with white, since no backgroundcolor was defined");}
             const col = hexToColor(webToHex(settings.backgroundColor));
+            console.log("Reforming texture to " + texSize.w + ", " + texSize.h + " pixels");
             pm.Reform(texSize.w, texSize.h, col, true);
         }
 
+        //Put a wait period here, to let Foundry do nessesary setup functions before we continue
         await this.sleep(100);
         //Now we can set the layer sprite as visible
         layer.SetVisible(true);
         //And then ofcourse make sure it is properly positioned
-        layer.reposition();
+        layer.Reposition();
         layer.isSetup = true; //Allows us to interact with the layer using the cursor
 
-        console.log(layer);
-        //What settings to we want to save in the scene?
-        //image name, so we can find the image file later
-        //the desired grid size (pixels per grid)
-        //source texture size (its saved in the texture itself)
-
-        let output = { desiredGridSize: gridData.scenePixelsPerGrid,
-            textureWidth: texSize.w, textureHeight: texSize.h,
-            sceneWidth: sceneSize.w, sceneHeight: sceneSize.h };
+        //Cache some values in the LayerSettings, for quick access during runtime
         LayerSettings.pixelsPerGrid = gridData.texturePixelsPerGrid;
         LayerSettings.sceneWidthPerGrid = gridData.scenePixelsPerGrid;
-        if(!game.user.isGM) { return; }
-        let buffer = pm.texture.encodeToPNG();
-        
-        SaveLayer(output, buffer);
-    }
 
+        //What settings to we want to save in the scene?
+        //The desired grid size, corrected to the actual grid size we will be using from now on (in pixels)
+        //Source texture size (also saved in the texture itself)
+        //The size of the scene
+
+        //Only the GM should be able to save
+        if(!game.user.isGM) { return; }
+        let newSettings = { desiredGridSize: gridData.scenePixelsPerGrid,
+            textureWidth: texSize.w, textureHeight: texSize.h,
+            sceneWidth: sceneSize.w, sceneHeight: sceneSize.h };
+        
+        //Determine if we should save the entire image to a file aswell
+        //This is really only useful when there doesnt exist an image file yet
+        //Check if there already exists an image file
+        let previousSettings = getSetting("drawlayerinfo");
+        const existsImageFile = (previousSettings!=null&&previousSettings!=undefined) && previousSettings.hasimg;
+        if(!existsImageFile){
+            //An image file does not exist, we should do a complete save
+            let buffer = pm.texture.EncodeToPNG();
+            SaveLayer(newSettings, buffer);
+        }
+        else{
+            //An image file exists, all we need to do is to fill update the settings regarding the canvas and whatnot
+            previousSettings.desiredGridSize = newSettings.desiredGridSize;
+            previousSettings.textureWidth = newSettings.textureWidth;
+            previousSettings.textureHeight = newSettings.textureHeight;
+            previousSettings.sceneWidth = newSettings.sceneWidth;
+            previousSettings.sceneHeight = newSettings.sceneHeight;
+            //Save settings
+            setSetting("drawlayerinfo", previousSettings);
+        }
+    }
+    logLayerSettings(settings){
+        console.error(settings);
+    }
 
     sleep(ms) {
         return new Promise((resolve) => {
@@ -153,12 +174,13 @@ export default class LoadAction {
     }  
 
     /**
-     * 
+     * Very heavy function that updates the entire Foundry scene. Use only when nessesary.
      * @param {number} pixelsPerGrid 
      * @param {number} sceneGridsX 
      * @param {number} sceneGridsY 
+     * @param {number} paddingGrids
      */
-    async _rescaleWorld(pixelsPerGrid, sceneGridsX, sceneGridsY){
+    async _rescaleWorld(pixelsPerGrid, sceneGridsX, sceneGridsY, paddingGrids){
         
         //Sanity check on parameters
         let curScene = game.scenes.get(canvas.scene.data._id);
@@ -167,15 +189,19 @@ export default class LoadAction {
         const oldSceneHeight = curScene.data.width;
         const newSceneWidth = pixelsPerGrid*sceneGridsX;
         const newSceneHeight = pixelsPerGrid*sceneGridsY;
+        const oldPadding = curScene.padding;
+        const setPadding = true;
         let didRescale = false;
-        if(oldGridSize!=pixelsPerGrid||oldSceneWidth!=newSceneWidth||oldSceneHeight!=newSceneHeight)
+        if(oldGridSize!=pixelsPerGrid||oldSceneWidth!=newSceneWidth||oldSceneHeight!=newSceneHeight||(setPadding && oldPadding!=paddingGrids))
         {
             didRescale = true;
             this._preRescale();
             LoadAction.IsUpdating = true;
             console.log("Rescaling grid to " + pixelsPerGrid + "px...");
             //'width: value' will change scene dimension width
-            await curScene.update({grid: pixelsPerGrid, width:pixelsPerGrid*sceneGridsX, height:pixelsPerGrid*sceneGridsY});
+            let data = {grid: pixelsPerGrid, width:pixelsPerGrid*sceneGridsX, height:pixelsPerGrid*sceneGridsY};
+            if(setPadding){data.padding = paddingGrids;}
+            await curScene.update(data);
             LoadAction.IsUpdating = false;
             console.log("Rescale complete");
             return true;
@@ -185,17 +211,15 @@ export default class LoadAction {
 
     _preRescale(){
         ToolsHandler.singleton.destroyToolPreviews();
-        console.log("layer: ");
-        var l = canvas.drawLayer.layer;
-        console.log(l);
-        console.log(l._destroyed);
+        const drawLayer = getDrawLayer();
+        var l = drawLayer.layer;
         if(l===null||l._destroyed){
             console.error("drawLayer.layer is destroyed?");
         }
-        canvas.drawLayer.layer.destroy(true);
-        canvas.drawLayer.layer = undefined;
+        drawLayer.layer.destroy(true);
+        drawLayer.layer = undefined;
        
-        canvas.drawLayer.pixelmap.recreateTexture();
+        drawLayer.pixelmap.RecreateTexture();
     }
     
 }

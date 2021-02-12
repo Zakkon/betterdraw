@@ -27,6 +27,7 @@ export class Stroke {
     /**
      * Returns an array of integer pixel coordinates
      * @param {boolean} deleteAfterwards 
+     * @return {{x:number, y:number}[]}
      */
     GetSteps(deleteAfterwards) {
         const toParse = this.xyCoords.length-this.parseIndex;

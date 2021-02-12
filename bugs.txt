@@ -7,6 +7,8 @@
 >dropdown arrow in brush size needs graphical redesign
 >dropdown brush size should matter when painting in grid mode
 >grid cursor object needs correct shape & positioning
->set padding in layer creation window
+>set padding in layer creation window, needs a slider from 0.05? to 0.5?
+>color palette?
 >netsyncing needs to be tested, especially hotjoining
 >redo (ctrl+Y)?
+>creating a new layer ontop of the old one (replacing it) creates a bug where the brushpreviewobj is missing and cant be found

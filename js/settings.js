@@ -5,8 +5,6 @@ export function getSetting(name) {
     return setting;
 }
 export async function setSetting(name, value) {
-    if(value===null){console.error("Clear scene setting " + name);}
-    else{ console.error("Set scene setting " + name); }
     const v = await canvas.scene.setFlag("betterdraw", name, value);
     return v;
 }
@@ -30,3 +28,15 @@ export function defaultSettings(){
     return defaults;
 }
 export function brushSizeIsDiameter() { return true; }
+
+export function getFoundrySceneSettings() {
+    let dims = canvas.dimensions;
+    console.log(canvas);
+    return { width: dims.sceneWidth, height: dims.sceneHeight,  rect: dims.sceneRect, paddingX: dims.paddingX, paddingY: dims.paddingY};
+  }
+  export function deleteStrokes() {
+    setSetting("strokes", null);
+  }
+  export async function getStrokes() {
+    return await getSetting("strokes");
+  }
