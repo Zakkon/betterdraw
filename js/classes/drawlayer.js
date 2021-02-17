@@ -26,21 +26,21 @@ export default class DrawLayer extends CanvasLayer {
             this.layer = undefined; //throw it away
             //Create a new one
         }
-        if(this.layer==undefined){
+        if(this.layer==undefined) {
             this._createSubLayer();
         }
     }
-    async _createSubLayer(){
+    async _createSubLayer() {
         if(this.pixelmap.texture==undefined) { console.error("pixelmap texture is null!"); return; }
         if(this.pixelmap.texture.baseTexture===null){ console.error("pixelmap baseTexture is null!"); return;}
 
         this.layer = await new PIXI.Sprite(this.pixelmap.texture); //This is the rendered object in the scene which we will paint with pixel data
         await this.addChild(this.layer); //It will be a child of this object
         this.pixelmap.ApplyPixels();
-        this.SetVisible(true);
+        this.SetVisible(this._cachedVisibility);
     }
 
-    SetVisible(v) { this.layer.visible = v; }
+    SetVisible(v) { this._cachedVisibility = v; this.layer.visible = v; }
    /*  get visible() { return this.layer.visible; }
     set visible(value) { this.layer.visible = value;} */
 

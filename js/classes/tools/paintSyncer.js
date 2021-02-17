@@ -68,10 +68,10 @@ export class PaintSyncer {
         {
             let stroke = this.strokes[i];
             if(stroke.type=="circle") {
-                parts.push({type:stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color, brushSize:stroke.brushSize, cellBased: stroke.cellBased});
+                parts.push({type: stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color, brushSize:stroke.brushSize, cellBased: stroke.cellBased});
             }
             else if(stroke.type=="grid") {
-                parts.push({ type:stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color });
+                parts.push({type: stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color });
             }
             else if(stroke.type == "rect") {
                 parts.push({type: stroke.type, x:stroke.x, y:stroke.y, width:stroke.width, height:stroke.height, color:stroke.color, cellBased:stroke.cellBased});

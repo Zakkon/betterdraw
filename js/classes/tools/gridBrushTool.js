@@ -9,7 +9,9 @@ export default class GridBrushTool extends BrushTool {
     
     constructor(name, type){ //string
         super(name, type);
+        
     }
+    resetLastPos() { this.lastPos = {x:-9999, y:-9999};}
 
     beginStroke(){
         this.op = true;
@@ -33,8 +35,10 @@ export default class GridBrushTool extends BrushTool {
             const gridX = Math.floor(pixelPos.x / gridSize);
             const gridY = Math.floor(pixelPos.y / gridSize);
 
-            if(gridX==this.lastPos.x && gridY==this.lastPos.y){ this.lastPos = {x:gridX, y:gridY}; return;} //Simple checker to make sure that cursor has moved
+            //Check that the cursor has moved to another grid before we log another step
+            if(gridX==this.lastPos.x && gridY==this.lastPos.y) { return; }
             this.lastPos = {x:gridX, y:gridY};
+
             //Log a step in the stroke
             this.syncer.LogStrokeStep(gridX, gridY);
         }

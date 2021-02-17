@@ -10,6 +10,10 @@ export default class SimpleDrawLayer extends DrawLayer {
 
     constructor(layername) {
         super(layername);
+        this.isSetup = false;
+        this.interactable = false;
+        this.showControls = false; //Turns most scene control buttons related to this layer on, like brushes, hide/show, delete
+        this._cachedVisibility = false; //A cached value of visibility, which is also applied to the underlying PIXI object
         
         // Register event listerenrs
         this._registerMouseListeners();
@@ -108,7 +112,8 @@ export default class SimpleDrawLayer extends DrawLayer {
         if (event.which === 90 && event.ctrlKey) {
             event.stopPropagation();
             NetSyncer.UndoLast();
-
+            //Send undo command to clients
+            NetSyncer.sendUndoCommand();
             }
         });
     }

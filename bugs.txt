@@ -12,3 +12,13 @@
 >netsyncing needs to be tested, especially hotjoining
 >redo (ctrl+Y)?
 >creating a new layer ontop of the old one (replacing it) creates a bug where the brushpreviewobj is missing and cant be found
+print console warning whenever GM resizes the scene manually
+color validation check
+make sure new scenes dont use previous drawlayer
+-------------------------------
+CORRUPTION TESTING
+-------------------------------
+Delete image file: print error, parse surviving layersettings, end result is a flat image with the correct dimensions painted in background color + strokes
+Delete layer settings: new default layer settings are created
+Delete strokes: everything functions, strokes are simply not drawn
+Resize scene using scene config menu: everything survives, but layer image is obviously no longer scaled to proportionaly match desired grid size

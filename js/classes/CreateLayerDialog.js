@@ -1,4 +1,4 @@
-import { webToHex, hexToWeb } from '../helpers.js';
+import { webToHex, hexToWeb, redrawScene } from '../helpers.js';
 import { getUserSetting, setUserSetting, setSetting, getSetting } from "../../js/settings.js";
 import ToolsHandler from '../../js/classes/tools/toolsHandler.js';
 import { LayerSettings } from '../../js/classes/layerSettings.js';
@@ -90,13 +90,13 @@ export default class CreateLayerDialog extends FormApplication {
     //Close UI
     Object.values(ui.windows).forEach((val) => {
       if (val.id === 'betterdraw-newlayer-dialog') val.close();});
-    //Parse together the options
-    var s = await LayerSettings.LoadFromSettings(options);
+    //Parse together the options as a LayerSettings
+    var s = await LayerSettings.ParseSettings(options);
     console.log(s);
     //Use the options to create a new layer
     var task = new LoadAction();
     await task.Perform(s);
-
+    await redrawScene();
     //LayerSettings.SaveLayer();
   }
   onOptionsFaulty(options){

@@ -1,9 +1,10 @@
-import { setSetting, getSetting } from "../settings";
+import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings } from "../settings";
 import { savePNG } from "../classes/serializiation/saveload.js";
 import { LayerSettings } from "./layerSettings";
 import LoadAction from "./loadAction";
 import { StrokePart } from "./tools/strokePart";
 import { Stroke } from "./tools/stroke";
+import { getDrawLayer, hexToColor, webToHex } from "../helpers";
 var pixels = require('image-pixels');
 
 export class NetSyncer {
@@ -90,6 +91,15 @@ export class NetSyncer {
         //going to straightup just send the parts as they are
         game.socket.emit('module.betterdraw', {event: "strokeparts", parts: parts});
     }
+    static sendUndoCommand(){
+        if(!NetSyncer.isMaster){return;}
+        game.socket.emit('module.betterdraw', {event: "undo"});
+    }
+    static sendRedoCommand(){
+        if(!NetSyncer.isMaster){return;}
+        game.socket.emit('module.betterdraw', {event: "redo"});
+    }
+
     /**
      * Called from the socket on the "strokeparts" event. Recieves an array of StrokeParts
      * @param {StrokePart[]} parts 
@@ -98,7 +108,8 @@ export class NetSyncer {
         if(NetSyncer.isMaster){return;}
         //Tell the pixelmap to draw according to these instructions
         //Todo: make a timestamp comparison, to make sure we arent drawing out-of-date instructions
-        canvas.drawLayer.pixelmap.DrawStrokeParts(parts);
+        let layer = getDrawLayer();
+        layer.pixelmap.DrawStrokeParts(parts);
     }
 
     static async loadImageFile() {
@@ -156,38 +167,61 @@ export class NetSyncer {
         }
         return a;
     }
+
     /**
      * Undo the last stroke
      */
     static async UndoLast() {
-        let strokeHistory = getSetting("strokes"); //Existing array of Strokes
+        let strokeHistory = await getStrokes(); //Existing array of Strokes
         if(!strokeHistory || strokeHistory.length<1) { console.log("stroke history null"); return; }
 
         //Tell our client to rollback to base texture, then draw all strokes except the last one
         //Get settings
-        let settings = getSetting("drawlayerinfo");
+        let settings = await getLayerSettings();
         if(!settings){return;}
         console.log(strokeHistory);
+        let layer = getDrawLayer();
         //settings should contain a reference to the base texture, we want the buffer from that
-        if(settings.hasimg) {
-            var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imgname);
+        if(settings.hasImageFile) {
+            var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imageFilename);
             //Then we tell the pixelmap to load from the buffer
             //warning: if base texture size and pixelmap size dont match, we might have a problem
             //could use readfrombuffer_scaled
             let buffer = Uint8ClampedArray.from(data);
-            console.log("data:");
-            //console.log(buffer[0]+", "+buffer[1]+", "+buffer[2]);
-            console.log(buffer);
-            canvas.drawLayer.pixelmap.ReadFromBuffer(buffer, width, height, false); //dont apply yet
+            layer.pixelmap.ReadFromBuffer(buffer, width, height, false); //dont apply yet
         }
         //if we cant get ahold of the base texture (we should), then see if the settings has a backgroundcolor, and create a buffer from that
         else {
-            console.log("no base texture found in settings, cannot undo"); return;
+            //Fill the entire texture with the background color
+            layer.pixelmap.DrawRect(0,0, layer.pixelmap.width, layer.pixelmap.height, hexToColor(webToHex(settings.backgroundColor)), false); //Dont apply yet
         }
         
         strokeHistory.splice(strokeHistory.length-1, 1); //Remove the latest stroke from the history
         //Draw the strokes onto the pixelmap
         canvas.drawLayer.pixelmap.DrawStrokeParts(strokeHistory, false);
         canvas.drawLayer.pixelmap.ApplyPixels();//and apply
+    }
+
+    /**
+     * 
+     * @param {boolean} visible 
+     */
+    static async CmdSetVisible(visible){
+        if(!NetSyncer.isMaster){return;}
+        //Change on my end first
+        const l = getDrawLayer(); l.SetVisible(visible);
+        //Save it in the layer settings
+        let settings = getLayerSettings();
+        if(settings!=null && (settings.isHidden == undefined || settings.isHidden == visible))
+        {
+            settings.isHidden = !visible;
+            console.log("Saving visibility setting...");
+            await setLayerSettings(settings);
+        }
+        game.socket.emit('module.betterdraw', {event: "setvis", value: visible});
+    }
+    static RpcSetVisible(visible){
+        if(NetSyncer.isMaster){return;}
+        const l = getDrawLayer(); l.SetVisible(visible);
     }
 }
