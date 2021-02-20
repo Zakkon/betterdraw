@@ -64,7 +64,7 @@ export default class BrushControls extends FormApplication {
 
   createSubElements(){
     //Setup brush size dropdown options
-    const sizes = [1,2,4,8];
+    const sizes = [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,24,28,32];
     let x = $("#select_brushsize"); x[0].innerHTML="";
     for(let i = 0; i < sizes.length; ++i) { $("<option>"+sizes[i]+"</a>").appendTo(x); }
     x.value = sizes[0];

@@ -12,30 +12,11 @@ export default class RectTool extends DrawTool {
     
     constructor(name){ //string
         super(name);
-        this.syncer = new PaintSyncer();
         this.lastPos = {x:-9999,y:-9999};
-        let ticker = PIXI.Ticker.shared;
-        var fr = this.partial(this.renderStack, this.syncer, canvas);
-        ticker.add(fr);
         this.brushColor = new Color32(255,0,0,255);
         this.brushSize = 1;
         this.dragStart = {x:0, y:0};
         this.dragCurrent = {x:0, y:0};
-    }
-    partial(func /*, 0..n args */) {
-        var args = Array.prototype.slice.call(arguments).splice(1);
-        return function() {
-          var allArguments = args.concat(Array.prototype.slice.call(arguments));
-          return func.apply(this, allArguments);
-        };
-    }
-    renderStack(syncer, canvas) {
-        var parts = syncer.GetReadyStrokeParts();
-        if(parts===undefined||parts.length<1){return;}
-        const pm = getDrawLayer().pixelmap;
-        pm.DrawStrokeParts(parts);
-
-        NetSyncer.CmdSendStrokeUpdates(parts);
     }
 
     onPointerDown(p, pixelPos, e) {
@@ -53,7 +34,6 @@ export default class RectTool extends DrawTool {
     onPointerMove(p, pixelPos, e) {
         //Todo: check if mouse is still down. If not, interrupt
 
-        const size = getUserSetting('brushSize');
         const preview = this.getPreviewObj();
         // If drag operation has started
         if (this.op) {

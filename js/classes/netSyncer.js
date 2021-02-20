@@ -2,9 +2,9 @@ import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings,
 import { savePNG } from "../classes/serializiation/saveload.js";
 import { LayerSettings } from "./layerSettings";
 import LoadAction from "./loadAction";
-import { StrokePart } from "./tools/strokePart";
 import { Stroke } from "./tools/stroke";
 import { getDrawLayer, hexToColor, webToHex } from "../helpers";
+import Color32 from "./color32";
 var pixels = require('image-pixels');
 
 export class NetSyncer {
@@ -82,15 +82,7 @@ export class NetSyncer {
         await setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
         //Clients should now have onUpdateScene called
     }
-    /**
-     * 
-     * @param {StrokePart[]} parts 
-     */
-    static CmdSendStrokeUpdates(parts){
-        if(!NetSyncer.isMaster){return;}
-        //going to straightup just send the parts as they are
-        game.socket.emit('module.betterdraw', {event: "strokeparts", parts: parts});
-    }
+    
     
     static CmdSendRedo(){
         if(!NetSyncer.isMaster){return;}
@@ -98,10 +90,19 @@ export class NetSyncer {
     }
 
     /**
-     * Called from the socket on the "strokeparts" event. Recieves an array of StrokeParts
-     * @param {StrokePart[]} parts 
-     */
-    static RpcStrokePartsRecieved(parts){
+    * 
+    * @param {{type:string, color:Color32, brushSize:number cellBased:boolean, xyCoords:{x:number, y:number}[], x:number, y:number, width:number, height:number }[]} parts 
+    */
+    static CmdSendStrokeUpdates(parts){
+        if(!NetSyncer.isMaster){return;}
+        //going to straightup just send the parts as they are
+        game.socket.emit('module.betterdraw', {event: "strokeparts", parts: parts});
+    }
+     /**
+    * 
+    * @param {{type:string, color:Color32, brushSize:number cellBased:boolean, xyCoords:{x:number, y:number}[], x:number, y:number, width:number, height:number }[]} parts 
+    */
+    static RpcStrokeUpdatesRecieved(parts){
         if(NetSyncer.isMaster){return;}
         //Tell the pixelmap to draw according to these instructions
         //Todo: make a timestamp comparison, to make sure we arent drawing out-of-date instructions
@@ -115,9 +116,9 @@ export class NetSyncer {
         return {buffer: data, width: width, height: height};
     }
     /**
-     * Logs strokes to history, so they can be used in the Undo process later
-     * @param {Stroke[]} stroke 
-     */
+    * Logs strokes to history, so they can be used in the Undo process later
+    * @param {Stroke[]} strokes
+    */
     static LogPastStrokes(strokes)
     {
         if(!NetSyncer.isMaster){return;}
@@ -174,7 +175,7 @@ export class NetSyncer {
      * Undo the last stroke
      */
     static async UndoLast() {
-        let strokeHistory = await getStrokes(); //Existing array of Strokes
+        let strokeHistory = getStrokes(); //Existing array of Strokes
         if(!strokeHistory || strokeHistory.length<1) { return; } //Stroke histoy needs to exist
         //Tell our client to rollback to base texture, then draw all strokes except the last one
         //Get settings
@@ -196,10 +197,6 @@ export class NetSyncer {
             layer.pixelmap.DrawRect(0,0, layer.pixelmap.width, layer.pixelmap.height, hexToColor(webToHex(settings.backgroundColor)), false); //Dont apply yet
         }
         
-        console.log("Past strokes: ");
-        console.log(strokeHistory);
-        console.log("Removing stroke: ");
-        console.log(strokeHistory[strokeHistory.length-1]);
         strokeHistory.splice(strokeHistory.length-1, 1); //Remove the latest stroke from the history
         //Draw the strokes onto the pixelmap
         layer.pixelmap.DrawStrokeParts(strokeHistory, false);

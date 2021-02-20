@@ -1,5 +1,4 @@
 import ToolPreviewObj from "./tools/toolPreviewObj.js";
-import DrawingHistory from "./drawingHistory.js";
 import DrawLayer from "./drawlayer.js";
 import ToolsHandler from "./tools/toolsHandler.js";
 import { QuicksaveLayer } from "./serializiation/saveload.js";
@@ -18,7 +17,6 @@ export default class SimpleDrawLayer extends DrawLayer {
         // Register event listerenrs
         this._registerMouseListeners();
         this._registerKeyboardListeners();
-        this.history = new DrawingHistory();
         
         this.pointer = 0;
         this.gridLayout = {};
@@ -64,12 +62,11 @@ export default class SimpleDrawLayer extends DrawLayer {
         this._pointerMoveBrush(p);
     }
 
+
     /**
      * Aborts any active drawing tools
      */
     clearActiveTool() {
-        // Clear history buffer
-        this.history.clearBuffer();
     }
     onLeaveDrawControl(){ToolsHandler.singleton.clearActiveTool();}
 
@@ -122,8 +119,6 @@ export default class SimpleDrawLayer extends DrawLayer {
      */
     _pointerDown(e) {
         if(!this.isSetup){return;}
-        // Don't allow new action if history push still in progress
-        if (this.history.historyBuffer.length > 0) return;
         // On left mouse button
         if (e.data.button === 0) {
             let data = this._cursorData(e);
@@ -161,8 +156,6 @@ export default class SimpleDrawLayer extends DrawLayer {
             const curTool = ToolsHandler.singleton.curTool;
             if(curTool==null){return;}
             curTool.onPointerUp(data.p, data.pixelPos, e);
-            // Push the history buffer
-            this.history.commitHistory();
         }
     }
     /** Returns mouse position in worldspace (p) and canvas space (pixelPos)

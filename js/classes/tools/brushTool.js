@@ -12,35 +12,9 @@ export default class BrushTool extends DrawTool {
     constructor(name, type){ //string
         super(name);
         this.type = type;
-        this.syncer = new PaintSyncer();
         this.lastPos = {x:-9999,y:-9999};
-        let ticker = PIXI.Ticker.shared;
-        var fr = this.partial(this.renderStack, this.syncer, canvas);
-        ticker.add(fr);
         this.brushColor = new Color32(255,0,0,255);
         this.brushSize = 1;
-    }
-    partial(func /*, 0..n args */) {
-        var args = Array.prototype.slice.call(arguments).splice(1);
-        return function() {
-          var allArguments = args.concat(Array.prototype.slice.call(arguments));
-          return func.apply(this, allArguments);
-        };
-    }
-    /**
-     * 
-     * @param {PaintSyncer} syncer 
-     * @param {any} canvas 
-     */
-    renderStack(syncer, canvas) {
-        /*We want to draw strokes here, so we need their data
-        But a stroke might be too large or too complex to draw all at once, so we will fetch parts of it (as large as we can manage) at a atime
-        */
-        var parts = syncer.GetReadyStrokeParts();
-        if(parts===undefined||parts.length<1) { return; }
-        const pm = getDrawLayer().pixelmap;
-        pm.DrawStrokeParts(parts);
-        NetSyncer.CmdSendStrokeUpdates(parts);
     }
 
     onPointerDown(p, pixelPos,e) {

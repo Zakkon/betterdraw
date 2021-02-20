@@ -4,8 +4,6 @@ import Color32 from "./color32";
 import DrawLayer from "./drawlayer";
 import { LayerSettings } from "./layerSettings";
 import SmartTexture from "./smarttexture";
-import { Stroke } from "./tools/stroke";
-import { StrokePart } from "./tools/strokePart";
 
 export default class PixelMap {
 
@@ -246,8 +244,21 @@ export default class PixelMap {
                 const gridSize = LayerSettings.pixelsPerGrid;
                 for(let j = 0; j < p.xyCoords.length; ++j){
                     let cellCoords = p.xyCoords[j];
+                    //Clamp to be inside the grid bounds (seems to only need fixing negative coordinates)
+                    let width = p.brushSize;
+                    let height = p.brushSize;
+                    if(cellCoords.x < 0){
+                        let diff = 0-cellCoords.x;
+                        cellCoords.x = 0;
+                        width = width - diff;
+                    }
+                    if(cellCoords.y < 0){
+                        let diff = 0-cellCoords.y;
+                        cellCoords.y = 0;
+                        height = height - diff;
+                    }
                     //Convert to pixel coords
-                    this.DrawRect(cellCoords.x * gridSize, cellCoords.y * gridSize, gridSize, gridSize,
+                    this.DrawRect(cellCoords.x * gridSize, cellCoords.y * gridSize, width * gridSize, height * gridSize,
                         p.color, false);
                 }
             }
@@ -259,25 +270,6 @@ export default class PixelMap {
         //Apply the pixels (renders the texture to the sprite)
         if(parts.length>0 && autoApply) { this.ApplyPixels(); }
     }
-    /**
-     * 
-     * @param {Stroke[]} strokes 
-     * @param {boolean} autoApply 
-     */
-    DrawStrokes(strokes, autoApply=true)
-    {
-        let parts = [];
-        for(let i = 0; i < strokes.length; ++i)
-        {
-            var steps = strokes[i].GetSteps(false);
-            if(steps.length>0){
-                parts.push(new StrokePart(steps, strokes[i].brushSize, strokes[i].color, strokes[i].cellBased));
-            }
-        }
-        this.DrawStrokeParts(parts, false);
-        if(parts.length>0&&autoApply){this.ApplyPixels();}
-    }
-    
     /**
      * Applies the texture buffer (including any recent changes) to the rendered texture in the scene
      */
