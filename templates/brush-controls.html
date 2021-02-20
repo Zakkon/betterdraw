@@ -9,23 +9,10 @@
         <div id = "brush-color">
             <input id="brushColorPicker", type="color" name="brushColor" value="{{ brushColor }}" data-dtype="String"/>
         </div>
-        <!-- <div id="brush-opacity-container">
-            <h3 class="form-header">Opacity</h3>
-            <div class="form-group brush-opacity">
-                <input type="range" name="brushOpacity" value="{{ brushOpacity }}" min="0" max="100" step="1" data-dtype="Number"/>
-                <div class="label left-label">Reveal</div>
-                <div class="label right-label">Hide</div>
-            </div>
-        </div> -->
-        <div id="dropdown-container">
-            <label class="thick-header" style="float: left; padding:8px;">Brush Size:</label>
-            <div class="dropdown" style="float:right; width: 80px;">
-                <label id="value-lbl"></label>
-                <button type="submit" name="submit" class="dropbtn" id="submitbtn">⛛</button>
-                <div id="myDropdown" class="dropdown-content">
-                </div>
-            </div> 
+        <div id="brushsize_container">
+            <label class="thick-header" style="float:left; padding: 8px;">Brush Size:</label>
+            <select id="select_brushsize" class="select-dropdown">
+            </select>
         </div>
-        
     </form>
 </div>

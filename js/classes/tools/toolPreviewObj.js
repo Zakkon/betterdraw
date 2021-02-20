@@ -24,6 +24,12 @@ export default class ToolPreviewObj extends PIXI.Graphics {
           this.visible = true;
           this.alpha = previewAlpha;
         }
+        else if(brushType=="rect"){
+          this._rect(defaultColor, 0,0, 100,100);
+          this.zIndex = 10;
+          this.visible = true;
+          this.alpha = previewAlpha;
+        }
     }
     _ellipse (fill, x,y, width,height) {
         this.beginFill(fill);

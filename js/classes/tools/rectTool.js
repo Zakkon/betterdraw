@@ -1,11 +1,12 @@
 import { getUserSetting } from "../../settings";
-import { webToHex } from "../../helpers"
+import { getDrawLayer, pixelPosToWorldPos, webToHex } from "../../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
 import { PaintSyncer } from "./paintSyncer";
 import { NetSyncer } from "../netSyncer";
 import BrushTool from "./brushTool";
+import { LayerSettings } from "../layerSettings";
 
 export default class RectTool extends DrawTool {
     
@@ -18,6 +19,8 @@ export default class RectTool extends DrawTool {
         ticker.add(fr);
         this.brushColor = new Color32(255,0,0,255);
         this.brushSize = 1;
+        this.dragStart = {x:0, y:0};
+        this.dragCurrent = {x:0, y:0};
     }
     partial(func /*, 0..n args */) {
         var args = Array.prototype.slice.call(arguments).splice(1);
@@ -29,13 +32,13 @@ export default class RectTool extends DrawTool {
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
         if(parts===undefined||parts.length<1){return;}
-        const pm = canvas.drawLayer.pixelmap;
+        const pm = getDrawLayer().pixelmap;
         pm.DrawStrokeParts(parts);
 
-        NetSyncer.sendStrokeUpdates(parts);
+        NetSyncer.CmdSendStrokeUpdates(parts);
     }
 
-    onPointerDown(p,e) {
+    onPointerDown(p, pixelPos, e) {
         let color = getUserSetting('brushColor')
         if(color==undefined) { color = "#ff0000" };
         color = webToHex(color);
@@ -45,26 +48,25 @@ export default class RectTool extends DrawTool {
 
         if(!this.op) { this.beginStroke(); }
         this.op = true;
-        
+        this.dragStart = {x:pixelPos.x, y:pixelPos.y};
     }
-    onPointerMove(p, e) {
-        const size = getUserSetting('brushSize');//this.brushSize;
+    onPointerMove(p, pixelPos, e) {
+        //Todo: check if mouse is still down. If not, interrupt
+
+        const size = getUserSetting('brushSize');
         const preview = this.getPreviewObj();
-        preview.width = size * 2;
-        preview.height = size * 2;
-        let pointerPos = e.data.getLocalPosition(canvas.app.stage);
-        preview.x = pointerPos.x;
-        preview.y = pointerPos.y;
         // If drag operation has started
         if (this.op) {
-            if(p.x==this.lastPos.x && p.y==this.lastPos.y){ this.lastPos = {x:p.x, y:p.y}; return;} //Simple checker to make sure that cursor has moved
-            this.lastPos = {x:p.x, y:p.y};
+            if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
+            this.lastPos = {x:pixelPos.x, y:pixelPos.y};
+            this.dragCurrent = this.lastPos;
+            let rect = this.getRect();
+            const wp = pixelPosToWorldPos({x:rect.x, y:rect.y});
+            this.positionCursor(preview, wp.x, wp.y, rect.width, rect.height);
         }
+       
     }
     onPointerUp(p,e) {
-
-        
-
         this.interruptStroke();
         this.op = false;
     }
@@ -79,8 +81,25 @@ export default class RectTool extends DrawTool {
     interruptStroke(){
         if(this.op) {
             //Create the stroke and send it to syncer
-            this.syncer.LogRect(0,0,10,10, false, this.brushColor);
+            let rect = this.getRect();
+            this.syncer.LogRect(rect.x, rect.y, rect.width, rect.height, 1, this.brushColor);
         }
         this.op = false;
+        this.positionCursor(this.getPreviewObj(), 0,0,0,0);
+    }
+    positionCursor(cursor, x, y, width, height){
+        cursor.transform.scale.x = 1;
+        cursor.transform.scale.y = 1;
+        cursor.width = ((width * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        cursor.height = ((height * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.y) / LayerSettings.pixelsPerGrid;
+        cursor.x = x;
+        cursor.y = y;
+    }
+    getRect(){
+        let fromX = this.dragStart.x < this.dragCurrent.x? this.dragStart.x : this.dragCurrent.x;
+        let fromY = this.dragStart.y < this.dragCurrent.y? this.dragStart.y : this.dragCurrent.y;
+        let width = Math.abs(this.dragCurrent.x - this.dragStart.x);
+        let height = Math.abs(this.dragCurrent.y - this.dragStart.y);
+        return {x:fromX, y:fromY, width: width, height: height};
     }
 }

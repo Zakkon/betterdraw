@@ -52,43 +52,25 @@ export default class BrushControls extends FormApplication {
 
     this.createSubElements();
     this.configureElements();
-    console.log("activatelisteners");
-    
-    
-    //Configure the dropdown option click events
-    let as = $("#myDropdown").find("a");
-    as.on("click", function(e) {
-      let text = e.target.innerText;
-      let i = parseInt(text);
+
+    let se = $("#select_brushsize");
+    se.on("change", () =>{
+      let val = se[0].value;
+      let i = parseInt(val);
+      console.log("Set to " + i);
       setUserSetting('brushSize', i);
-      let lbl = $("#value-lbl")[0];
-      lbl.innerText = i;
-      let s = $("#myDropdown")[0];
-      console.log(s);
-      s.classList.toggle("show");
     });
   }
 
   createSubElements(){
-  //Setup brush size dropdown options
-  const sizes = [1,2,4,8];
-  let s = $("#myDropdown");
-  for(let i = 0; i < sizes.length; ++i){
-    let option = $("<a>"+sizes[i]+"</a>").appendTo(s);
-  }
-}
+    //Setup brush size dropdown options
+    const sizes = [1,2,4,8];
+    let x = $("#select_brushsize"); x[0].innerHTML="";
+    for(let i = 0; i < sizes.length; ++i) { $("<option>"+sizes[i]+"</a>").appendTo(x); }
+    x.value = sizes[0];
+  } 
   configureElements(activeTool) {
-  //Set the current value label of the dropdown menu
-  let curSize = getUserSetting("brushSize");
-  let lbl = $("#value-lbl")[0]; console.log(lbl);
-  lbl.innerText = curSize;
-
-  console.log("configure");
-  let turnOff = activeTool=="eyedropper"||activeTool=="grid";
-  let container = $("#dropdown-container")[0];
-  if(turnOff&&!container.classList.contains("hide")){container.classList.toggle("hide");}
-  else if(!turnOff && container.classList.contains("hide")){container.classList.toggle("hide");}
-}
+  }
 
   /**
    * This method is called upon form submission after form data is validated

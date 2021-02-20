@@ -1,5 +1,5 @@
 import { brushSizeIsDiameter, getUserSetting } from "../../settings";
-import { webToHex } from "../../helpers"
+import { getDrawLayer, webToHex } from "../../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
@@ -33,12 +33,14 @@ export default class BrushTool extends DrawTool {
      * @param {any} canvas 
      */
     renderStack(syncer, canvas) {
+        /*We want to draw strokes here, so we need their data
+        But a stroke might be too large or too complex to draw all at once, so we will fetch parts of it (as large as we can manage) at a atime
+        */
         var parts = syncer.GetReadyStrokeParts();
         if(parts===undefined||parts.length<1) { return; }
-        const pm = canvas.drawLayer.pixelmap;
+        const pm = getDrawLayer().pixelmap;
         pm.DrawStrokeParts(parts);
-
-        NetSyncer.sendStrokeUpdates(parts);
+        NetSyncer.CmdSendStrokeUpdates(parts);
     }
 
     onPointerDown(p, pixelPos,e) {

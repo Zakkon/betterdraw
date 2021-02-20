@@ -1,4 +1,4 @@
-import { webToHex, hexToWeb, redrawScene } from '../helpers.js';
+import { webToHex, hexToWeb, redrawScene, affirmWebRGB } from '../helpers.js';
 import { getUserSetting, setUserSetting, setSetting, getSetting } from "../../js/settings.js";
 import ToolsHandler from '../../js/classes/tools/toolsHandler.js';
 import { LayerSettings } from '../../js/classes/layerSettings.js';
@@ -32,7 +32,7 @@ export default class CreateLayerDialog extends FormApplication {
       gridSize: 1,
       sceneWidth: 50,
       sceneHeight: 50,
-      backgroundColor: LayerSettings.DefaultBackgroundColor(),
+      backgroundColor: affirmWebRGB(LayerSettings.DefaultBackgroundColor()),
     };
   }
 

@@ -1,5 +1,7 @@
+/**
+ * Base class for tools related to drawing. Meant to be extended.
+ */
 export default class DrawTool {
-
 
     constructor(name) {
         this.name = name;

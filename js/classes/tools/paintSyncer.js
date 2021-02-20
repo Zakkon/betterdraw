@@ -5,7 +5,11 @@ import { StrokePart } from "./strokePart";
 
 export class PaintSyncer {
 
+    
     constructor() {
+        /**
+        * @type {Stroke[]}
+        */
         this.strokes = [];
     }
     /**
@@ -31,7 +35,7 @@ export class PaintSyncer {
      * @param {number} y 
      */
     LogStrokeStep(x, y) {
-        if(this.strokes.length<1) { console.error("no active stroke to add steps to"); return; }
+        if(this.strokes.length<1) { console.error("No active stroke to add steps to"); return; }
         this.activeStroke.AddCoords({x:x, y:y});
     }
     /**
@@ -52,15 +56,18 @@ export class PaintSyncer {
      * @param {Color32} color 
      */
     LogRect(fromX, fromY, width, height, brushSize, color){
+        let cellBased = false;
         this.strokes.forEach(function(s) { s.isActive=false; });
         var stroke = new RectStroke("rect", brushSize, color, cellBased, fromX, fromY, width, height);
+        stroke.isActive = false; //Stroke is already done
         this.strokes.push(stroke);
+
     }
     /**
-     * 
+     * Retrieves parts of a stroke that are ready for rendering or syncing across the network
      * @return {{type:string, color:Color32, cellBased:boolean}[]}
      */
-    GetReadyStrokeParts(){
+    GetReadyStrokeParts() {
         var parts = [];
         //Try to find strokes or parts of strokes that are waiting to be synced across the network
         //Start from the oldest ones
@@ -68,6 +75,7 @@ export class PaintSyncer {
         {
             let stroke = this.strokes[i];
             if(stroke.type=="circle") {
+                //We need type, xycoords, color, brushsize, and cellbased boolean
                 parts.push({type: stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color, brushSize:stroke.brushSize, cellBased: stroke.cellBased});
             }
             else if(stroke.type=="grid") {
@@ -75,13 +83,15 @@ export class PaintSyncer {
             }
             else if(stroke.type == "rect") {
                 parts.push({type: stroke.type, x:stroke.x, y:stroke.y, width:stroke.width, height:stroke.height, color:stroke.color, cellBased:stroke.cellBased});
+                stroke.expired = true;
             }
             else if(stroke.type==undefined){console.error("Brush does not have a designated type!");}
             else{console.error("Did not recognize a brush of type " + stroke.type); console.log(stroke);}
             //Delete the entire stroke if its empty and not the active stroke
-            if(this.strokes[i].isEmpty && !this.strokes[i].isActive){
+            if(this.strokes[i].isEmpty && !this.strokes[i].isActive) {
                 //Delete this stroke, its spent
                 const s = this.strokes.splice(i,1); i = i -1;
+                //Save the stroke in the history (enables Undo)
                 NetSyncer.LogPastStrokes(s);
             }
         }
