@@ -116,3 +116,27 @@
     color: #FFF;
 	text-shadow: 1px 1px 0 #000;
   }
+
+  .color-palette-grid{
+    width: 246px;
+    min-width: 246px;
+    min-height: fit-content;
+    background: gray;
+    overflow-y: auto;
+  }
+  .color-palette-button{
+    width: 20px;
+    height: 20px;
+    float: left;
+    background: lightgray;   
+    margin: 2px;
+  }
+  .color-palette-expand-btn{
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    background-color: white;
+    text-align: left;
+    font: inherit;
+    padding: 0px;
+  }

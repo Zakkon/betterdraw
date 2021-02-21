@@ -6,13 +6,22 @@
                 <input type="range" name="brushSize" value="{{ brushSize }}" min="1" max="100" step="1" data-dtype="Number"/>
             </div>
         </div> -->
-        <div id = "brush-color">
-            <input id="brushColorPicker", type="color" name="brushColor" value="{{ brushColor }}" data-dtype="String"/>
+        <div style="display: flex;">
+            <div id="mainform" style="min-width: fit-content;">
+                <div id = "brush-color">
+                    <input id="brushColorPicker", type="color" name="brushColor" value="{{ brushColor }}" data-dtype="String"/>
+                </div>
+                <div id="brushsize_container">
+                    <label class="thick-header" style="float:left; padding: 8px;">Brush Size:</label>
+                    <select id="select_brushsize" class="select-dropdown">
+                    </select>
+                </div>
+            </div>
+            <button id="color-palette-expand-btn" class="color-palette-expand-btn">⯈</button>
+            <div id="color-palette-grid" class="color-palette-grid">
+                
+            </div>
         </div>
-        <div id="brushsize_container">
-            <label class="thick-header" style="float:left; padding: 8px;">Brush Size:</label>
-            <select id="select_brushsize" class="select-dropdown">
-            </select>
-        </div>
+        
     </form>
 </div>
