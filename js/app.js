@@ -60,7 +60,7 @@ function recieveNetMsg(data){
       if(game.user.isGM) { NetSyncer.onClientJoin(); }
       break;
     case "strokeparts":
-      NetSyncer.RpcStrokePartsRecieved(data.parts);
+      NetSyncer.RpcStrokeUpdatesRecieved(data.parts);
       break;
     case "texturerefreshed": NetSyncer.onRecieveTexture(); break;
     case "undo": NetSyncer.UndoLast();

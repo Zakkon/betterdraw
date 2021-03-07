@@ -47,8 +47,8 @@ export async function setStrokes(data) {
 /**
  * @returns {{type:string, color:Color32, cellBased:boolean, brushSize: number, x:number, y:number, width:number, height:number, xyCoords:{x:number, y:number}[]}[]}
  */
-export async function getStrokes() {
-  return await getSetting("strokes");
+export function getStrokes() {
+  return getSetting("strokes");
 }
 /**
  * @returns {LayerSettings}

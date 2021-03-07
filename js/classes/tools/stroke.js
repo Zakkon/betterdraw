@@ -1,5 +1,4 @@
 import Color32 from "../color32";
-import { StrokePart } from "./strokePart";
 
 export class Stroke {
 
@@ -19,6 +18,7 @@ export class Stroke {
         this.xyCoords = [];
         this.timestamp = 0;
         this.parseIndex = 0;
+        this.expired = false;
     }
     /**
      * Add an integer pixel coordinate to the stroke
@@ -32,14 +32,14 @@ export class Stroke {
      * @param {boolean} deleteAfterwards 
      * @return {{x:number, y:number}[]}
      */
-    GetSteps(deleteAfterwards) {
+    GetSteps() {
         const toParse = this.xyCoords.length - this.parseIndex;
         const steps = this.xyCoords.slice(this.parseIndex, this.parseIndex+toParse);
         this.parseIndex = this.parseIndex + toParse;
-        if(deleteAfterwards) { this.xyCoords = []; this.parseIndex = 0;}
+        this.expired = this.parseIndex >= this.xyCoords.length;
         return steps;
     }
-    get isEmpty(){ return this.xyCoords.length<1 || this.parseIndex >= this.xyCoords.length; }
+    get empty(){ return this.xyCoords.length<1 || this.expired; }
 }
 export class RectStroke extends Stroke {
     /**
@@ -61,5 +61,5 @@ export class RectStroke extends Stroke {
         this.height = height;
         this.expired = false;
     }
-    get isEmpty() { return this.expired || this.width<1 || this.height<1;}
+    get empty() { return this.expired || this.width<1 || this.height<1;}
 }

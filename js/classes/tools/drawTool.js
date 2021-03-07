@@ -1,3 +1,5 @@
+import ToolsHandler from "./toolsHandler";
+
 /**
  * Base class for tools related to drawing. Meant to be extended.
  */
@@ -16,4 +18,6 @@ export default class DrawTool {
     onPointerUp(p, pixelPos, e){
         
     }
+
+    get syncer() { return ToolsHandler.singleton.syncer;}
 }

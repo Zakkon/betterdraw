@@ -6,6 +6,8 @@ import RectTool from "./rectTool";
 import GridBrushTool from "./gridBrushTool";
 import EyedropperTool from "./eyedropperTool";
 import { getDrawLayer } from "../../helpers";
+import { PaintSyncer } from "./paintSyncer";
+import { NetSyncer } from "../netSyncer";
 
 export default class ToolsHandler {
 
@@ -22,6 +24,33 @@ export default class ToolsHandler {
     //Where do we store the singleton?
     canvas.betterDraw_ToolsHandler = this;
     this.createAllTools();
+    
+    this.syncer = new PaintSyncer();
+    let ticker = PIXI.Ticker.shared;
+    var fr = this.partial(this.renderStack, this.syncer, canvas);
+    ticker.add(fr);
+  }
+  partial(func /*, 0..n args */) {
+    var args = Array.prototype.slice.call(arguments).splice(1);
+    return function() {
+      var allArguments = args.concat(Array.prototype.slice.call(arguments));
+      return func.apply(this, allArguments);
+    };
+  }
+  /**
+   * 
+   * @param {PaintSyncer} syncer 
+   * @param {any} canvas 
+   */
+  renderStack(syncer, canvas) {
+      /*We want to draw strokes here, so we need their data
+      But a stroke might be too large or too complex to draw all at once, so we will fetch parts of it (as large as we can manage) at a atime
+      */
+      var parts = syncer.GetReadyStrokeParts();
+      if(parts===undefined||parts.length<1) { return; }
+      const pm = getDrawLayer().pixelmap;
+      pm.DrawStrokeParts(parts);
+      NetSyncer.CmdSendStrokeUpdates(parts);
   }
 
   /**
@@ -58,6 +87,8 @@ export default class ToolsHandler {
     rect.setActive(false);
     layerobj.addChild(rect);
     this.toolPreviews.push(rect);
+
+    this.setPreviewTint();
   }
 
   /**
@@ -140,14 +171,18 @@ export default class ToolsHandler {
     if (toolName === 'brush') { this.getToolPreview("ellipse").setActive(true); }
     //Grid drawing tool
     if (toolName === 'grid') {
-      if (canvas.scene.data.gridType === 1) { //We only work with square grids for now
+      this.getToolPreview("grid").setActive(true); //For now we are keeping it simple, user has to learn when grid tool doesnt function properly
+
+      //Old code:
+      /* if (canvas.scene.data.gridType === 1) { //We only work with square grids for now
         this.getToolPreview("grid").setActive(true);
-      }
+      } */
       //Other gridtypes (TODO?)
       /* else if ([2, 3, 4, 5].includes(canvas.scene.data.gridType)) {
         //this._initGrid();
         //this.polygonPreview.visible = true;
       } */
+
     }
     //Rect drawing tool
     if(toolName==='rect') { this.getToolPreview("rect").setActive(true);  }
@@ -174,5 +209,7 @@ export default class ToolsHandler {
     for(let i = 0; i < this.toolPreviews.length; ++i)
     { this.toolPreviews[i].tint = tint; }
   }
+
+
 }
 
