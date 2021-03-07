@@ -49,7 +49,6 @@ export default class DrawLayer extends CanvasLayer {
         if(this.pixelmap.texture==undefined) { console.error("pixelmap texture is null!"); return; }
         if(this.pixelmap.texture.baseTexture===null){ console.error("pixelmap baseTexture is null!"); return;}
         console.log(this.pixelmap.texture);
-        this.pixelmap.DrawRect(0,0,100,100,new Color32(255,0,0,255), true); //Debug
 
         this.layer = await new PIXI.Sprite(this.pixelmap.texture); //This is the rendered object in the scene which we will paint with pixel data
         await this.addChild(this.layer); //It will be a child of this object

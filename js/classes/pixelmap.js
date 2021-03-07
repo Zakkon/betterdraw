@@ -91,7 +91,7 @@ export default class PixelMap {
 
 
     GetPixel(x, y) {
-        const i = ((y * width) + x) * 4;
+        const i = ((y * this.width) + x) * 4;
         return new Color32(this.pixels[i], this.pixels[i + 1], this.pixels[i + 2], this.pixels[i + 3]);
     }
     GetPixelsRect(x, y, areaWidth, areaHeight) {
@@ -136,13 +136,16 @@ export default class PixelMap {
         //console.log("Draw rect at " + x + "," + y + " : " + w + "," + h);
         if (x < 0 || y < 0 || ((w * h * 4) > this.pixels.Length)) {
             console.error("Rect is too big or out of bounds");
-            console.error((w * h).ToString() + " pixels are needed to fill the rect, but we only have " + (this.pixels.Length / 4));
+            console.error((w * h) + " pixels are needed to fill the rect, but we only have " + (this.pixels.Length / 4));
         }
         for (let i = 0; i < w; ++i)
         {
             for (let j = 0; j < h; ++j)
             {
-                let ix = (((j + y) * this.width) + (i + x)) * 4;
+                let gx = (i+x);
+                let gy = (j+y);
+                if(gx<0||gx>=this.width||gy<0||gy>=this.height) { continue; }
+                let ix = ((gy * this.width) + gx) * 4;
                 this.pixels[ix] = col.r;
                 this.pixels[ix + 1] = col.g;
                 this.pixels[ix + 2] = col.b;
@@ -163,23 +166,43 @@ export default class PixelMap {
     {
         if(brushSize===undefined){console.error("BrushSize is undefined!");}
         const useAdditiveColors = false;
-        if(brushSize <= 1) { this.DrawPixel(x, y, color, autoApply); return new Array(((this.width * y) + x)*4); }
-        //else if(brushSize< 1) { return new int[0]; }
-
-        const brushSq = brushSize * brushSize;
-        const brushX4 = brushSq << 2;
-        const brushX1 = brushSize << 1;
+        if(brushSize <= 1) { this.DrawPixel(x, y, color, autoApply); /*return new Array(((this.width * y) + x)*4);*/ }
 
         var pixel_i4 = 0;
         let edits = []; //int array
 
+        const radius = brushSize/2;
+        const radiusSquared = radius*radius;
+        let sx = x-radius;
+        let sy = y-radius;
+        for(let i = 0; i < (radius*2)+1; ++i) {
+            let ex = sx + i; //point
+            let dx = ex - x; //distance
+            for(let j = 0; j < (radius*2)+1; ++j) {
+                let ey = sy + j; //point
+                let dy = ey - y; //distance
+                if(ex<0||ex>=this.width||ey<0||ey>=this.height){continue;}
+                let distanceSquared = Math.abs(dx * dx + dy * dy);
+                console.log(distanceSquared + " < " + radiusSquared);
+                if(distanceSquared<=radiusSquared) {
+
+                    pixel_i4 = ((this.width * ey) + ex) * 4;
+                    edits.push(pixel_i4);
+                    this._setPixel_i4(pixel_i4, color);
+                }
+            }
+        }
+
+        /* const brushSq = brushSize * brushSize;
+        const brushX4 = brushSq << 2;
+        const brushX1 = brushSize << 1;
         for (let i = 0; i < brushX4; i++)
         {
             let tx = (i % brushX1) - brushSize;
             let ty = Math.floor(i / brushX1) - brushSize;
 
-            if (tx * tx + ty * ty > brushSq) continue;
-            if (x + tx < 0 || y + ty < 0 || x + tx >= this.width || y + ty >= this.height) continue; // temporary fix for corner painting
+            if (tx * tx + ty * ty > brushSq) {continue;}
+            if (x + tx < 0 || y + ty < 0 || x + tx >= this.width || y + ty >= this.height) {continue;} // temporary fix for corner painting
 
             pixel_i4 = (this.width * (y + ty) + x + tx) << 2;
             edits.push(pixel_i4);
@@ -201,11 +224,12 @@ export default class PixelMap {
                 this._setPixel_i4(pixel_i4, color);
                 //}
             } // if additive
-        } // for area
+        } // for area */
 
         if (autoApply) { this.ApplyPixels(); }
-        return edits;
+        /*return edits;*/
     }
+
     /**
      * 
      * @param {{type:string, color:Color32, cellBased:boolean, brushSize: number, x:number, y:number, width:number, height:number, xyCoords:{x:number, y:number}[]}[]} parts 
@@ -221,7 +245,7 @@ export default class PixelMap {
                     
                 }
                 else{
-                    for(let j = 0; j < p.xyCoords.length; ++j){
+                    for(let j = 0; j < p.xyCoords.length; ++j) {
                         this.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
                     }
                 }
@@ -256,6 +280,7 @@ export default class PixelMap {
     DrawStrokes(strokes, autoApply=true)
     {
         let parts = [];
+        console.log(strokes);
         for(let i = 0; i < strokes.length; ++i)
         {
             var steps = strokes[i].GetSteps(false);
