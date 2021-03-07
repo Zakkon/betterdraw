@@ -1,4 +1,7 @@
-import Color32 from "./classes/color32";
+import Color32 from "./color32";
+import { getSetting, setSetting } from "./settings";
+import { LayerSettings } from "./layer/layerSettings";
+import SimpleDrawLayer from "./layer/simpledraw";
 
 /**
  * Converts web colors to base 16
@@ -16,6 +19,12 @@ export function webToHex(n) {
  */
 export function hexToWeb(n) {
   return (`${n}`).replace('0x', '#');
+}
+export function affirmWebRGB(rgba){
+  let hex = webToHex(rgba);
+  let col32 = hexToColor(hex);
+  hex = colorToHex(col32);
+  return hexToWeb(hex);
 }
 
 /**
@@ -46,13 +55,42 @@ export function hexToColor(hex) { //Wants a color in a 0x000000 format
       for(i=0;i<3;i++){
           chunks.push(parseInt(tmp[i],16));
       }
-  }else {
+  }
+  else if(hex.length==8){
+    tmp = hex.match(/.{2}/g);
+      for(i=0;i<4;i++){
+          chunks.push(parseInt(tmp[i],16));
+      }
+  }
+  else {
       throw new Error("'"+hex+"' is not a valid hex format");
   }
   var c = new Color32(chunks[0], chunks[1], chunks[2]);
   if(chunks.length>3){c.a = chunks[3];}
   return c;
 }
+/**
+ * Returns a color in 0xffffff format
+ * @param {Color32} color 
+ */
+export function colorToHex(color) {
+ 
+   const a = GetHex(Math.floor(color.r / 16));
+   const b = GetHex(Math.round(color.r % 16));
+   const c = GetHex(Math.floor(color.g / 16));
+   const d = GetHex(Math.round(color.g % 16));
+   const e = GetHex(Math.floor(color.b / 16));
+   const f = GetHex(Math.round(color.b % 16));
+ 
+   const z = a + b + c + d + e + f;
+ 
+   return "0x" + z;
+}
+export function GetHex (decimal) {
+	let alpha = "0123456789ABCDEF";
+	let out = "" + alpha[decimal];
+	return out;
+};
 
 /**
  * Converts an integer percent (0-100) to a hexadecimal greyscale color
@@ -95,14 +133,14 @@ export function pixiDump(tgt = null) {
 /**
  * Prints formatted console msg if string, otherwise dumps object
  * @param data {String | Object} Output to be dumped
- * @param force {Boolean}        Log output even if CONFIG.debug.simplefog = false
+ * @param force {Boolean}        Log output even if CONFIG.debug.betterdraw = false
  */
-export function simplefogLog(data, force = false) {
-  if (CONFIG.debug.simplefog || force) {
+export function betterdrawLog(data, force = false) {
+  if (CONFIG.debug.betterdraw || force) {
     // eslint-disable-next-line no-console
-    if (typeof data === 'string') console.log(`Simplefog | ${data}`);
+    if (typeof data === 'string') console.log(`Betterdraw | ${data}`);
     // eslint-disable-next-line no-console
-    else console.log('Simplefog |', data);
+    else console.log('Betterdraw |', data);
   }
 }
 
@@ -142,28 +180,83 @@ export function readPixel(target, x = 0, y = 0) {
  * 
  * @param {number} pixelsPerGrid 
  * @param {number} textureWidth 
- * @param {number} textureHeight 
- * @param {number} sceneWidth 
- * @param {number} sceneHeight 
+ * @param {number} textureHeight
  */
-export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight){
+export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight, sceneWidth, sceneHeight){
+  //All of these are desired values^
   //The only unit we count for here is 'pixel'. All incoming parameters are measured by that unit.
   //The above parameters describe a *desired* bunch of settings, its out job to solve problems
-  let texSize = {w:textureWidth, h:textureHeight};
-  if(pixelsPerGrid<50) //Foundry doesnt allow for grid sizes < 50px
-  {
-    //if ppg = 1, s = 50
-    //if ppg is 2, s = 25
-    let s = 50/pixelsPerGrid;
-    pixelsPerGrid = 50;
-    texSize.w = Math.ceil(texSize.w * s);
-    texSize.h = Math.ceil(texSize.h * s);
-  }
-  const sceneWidthInGrids = Math.ceil(texSize.w / pixelsPerGrid);
-  const sceneHeightInGrids = Math.ceil(texSize.h / pixelsPerGrid);
+  //texture size doesnt need to change
+  //scene width does however rely on texture width and grid size
 
+  /* example: 5000w scene, 5000px texture, desired grid size = 1
+  grid size upped from 1 to 50
+  tex size remains at 5000px
+  scene size upped to 5000*50 = 25000
+  */
+
+  let sceneSize = { w: sceneWidth, h: sceneHeight };
+  const minGridSize = LayerSettings.FoundryMinGridSize(); //Foundry doesnt allow for grid sizes < 50px
+  if(pixelsPerGrid<minGridSize) 
+  {
+    let f = minGridSize/pixelsPerGrid;
+    pixelsPerGrid = minGridSize;
+    //Upscale the scene rect size. A 10x10 px scene (where each px = 1 grid) now becomes a 500x500 px scene, where each grid = 50px
+    //Each grid would however still represent 1 pixel from the texture data itself
+    sceneSize.w = Math.ceil(sceneSize.w * f);
+    sceneSize.h = Math.ceil(sceneSize.h * f);
+  }
+  const sceneWidthInGrids = Math.ceil(sceneSize.w / pixelsPerGrid);
+  const sceneHeightInGrids = Math.ceil(sceneSize.h / pixelsPerGrid);
+  //According to above example, a 10x10 px scene that was upscaled to 500x500px means that (10 / (500 / 50)) = 1 texture pixel per grid
+  const texPixelsPerGrid = textureWidth / (sceneSize.w / pixelsPerGrid); //todo: x & y?
   //todo: max grid size
   //or if gridsize > tex size
 
-  return {pixelsPerGrid: pixelsPerGrid, texSize: texSize, sceneWidthInGrids:sceneWidthInGrids, sceneHeightInGrids: sceneHeightInGrids };
+  return { texturePixelsPerGrid: texPixelsPerGrid,
+    scenePixelsPerGrid: pixelsPerGrid,
+    sceneSize: sceneSize,
+    texSize: {w:textureWidth, h:textureHeight},
+    sceneWidthInGrids:sceneWidthInGrids, sceneHeightInGrids: sceneHeightInGrids };
+}
+
+/**
+ * Simple sleep method.
+ * @param {number} ms 
+ */
+export function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+export function isNullNumber(number){return number==NaN||number==undefined||number==null;}
+export function worldPosToPixelPos(worldPos){
+  //Point in worldspace to pixel on the scene canvas
+  //Used primarily in mouse cursor transformations
+  const l = canvas.drawLayer.layer.transform;
+  let pixelPos = {x:(worldPos.x-l.position.x)/l.scale.x, y:(worldPos.y-l.position.y)/l.scale.y};
+  return pixelPos;
+}
+export function pixelPosToWorldPos(pixelPos)
+{
+  //Point on the scene canvas to point in worldspace
+  //Used primarily in mouse cursor transformations
+  const l = canvas.drawLayer.layer.transform;
+  let worldPos = {x:(pixelPos.x*l.scale.x)+l.position.x, y:(pixelPos.y*l.scale.y)+l.position.y};
+  return worldPos;
+}
+/**
+ * @return {SimpleDrawLayer}
+ */
+export function getDrawLayer(){
+  return canvas.drawLayer; //SimpleDrawLayer
+}
+/**
+ * 
+ * @param {boolean} interactable 
+ */
+export function setLayerControlsInteractable(interactable){
+  getDrawLayer().showControls = interactable;
+}
+
+
+export async function redrawScene(){
+  const curScene = game.scenes.get(canvas.scene.data._id);
+  await canvas.draw(curScene);
 }

@@ -1,27 +1,28 @@
-#simplefog-brush-controls {
+#betterdraw-brush-controls {
     position: absolute;
     left: 120px;
     width: 180px;
     text-align: center;
+    top: 74px; /*debug*/
 }
 
-#simplefog-brush-controls h3,
-#simplefog-brush-controls .label {
+#betterdraw-brush-controls h3,
+#betterdraw-brush-controls .label {
     color: #FFF;
 	text-shadow: 1px 1px 0 #000;
 }
 
-#simplefog-brush-controls .label {
+#betterdraw-brush-controls .label {
     position: absolute;
     top: 14px;
 }
-#simplefog-brush-controls .brush-opacity {
+#betterdraw-brush-controls .brush-opacity {
     position: relative;
 }
-#simplefog-brush-controls .right-label {
+#betterdraw-brush-controls .right-label {
     right: 0;
 }
-#simplefog-brush-controls .left-label {
+#betterdraw-brush-controls .left-label {
     left: 0;
 }
 
@@ -42,10 +43,12 @@
  .dropbtn {
     background-color: #3498DB;
     color: white;
-    padding: 16px;
+    padding: 2px;
     font-size: 16px;
     border: none;
     cursor: pointer;
+    width: 30px;
+    float: right;
   }
   
   /* Dropdown button on hover & focus */
@@ -57,22 +60,36 @@
   .dropdown {
     position: relative;
     display: inline-block;
+    width: 100%;
+    background-color: white;
   }
-  
+  #value-lbl{
+    float:left;
+    padding: 8px;
+  }
+  .select-dropdown{
+    background-color: white;
+    float: right;
+    width: 80px;
+  }
+
+
   /* Dropdown Content (Hidden by Default) */
   .dropdown-content {
     display: none;
     position: absolute;
     background-color: #f1f1f1;
-    min-width: 160px;
+    /* min-width: 160px; */
+    margin-top: 33px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
+    width: 100%;
   }
   
   /* Links inside the dropdown */
   .dropdown-content a {
     color: black;
-    padding: 12px 16px;
+    padding: 2px 2px;
     text-decoration: none;
     display: block;
   }
@@ -81,4 +98,48 @@
   .dropdown-content a:hover {background-color: #ddd}
   
   /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
-  .show {display:block;} 
+  .show { display:block; } 
+  .hide { visibility: hidden; }
+
+  .eyedropper-icon{
+    background-image: url(eyedropper.svg);
+  }
+  .betterdraw-icon{
+    background-image: url(pencil-alt-plus.svg);
+  }
+  .custom-icon{
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    padding: 7px 7px 7px 7px;
+    top: 4px;
+    position: relative;
+  }
+  .thick-header{
+    color: #FFF;
+	text-shadow: 1px 1px 0 #000;
+  }
+
+  .color-palette-grid{
+    width: 246px;
+    min-width: 246px;
+    min-height: fit-content;
+    background: gray;
+    overflow-y: auto;
+  }
+  .color-palette-button{
+    width: 20px;
+    height: 20px;
+    float: left;
+    background: lightgray;   
+    margin: 2px;
+  }
+  .color-palette-expand-btn{
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    background-color: white;
+    text-align: left;
+    font: inherit;
+    padding: 0px;
+  }
