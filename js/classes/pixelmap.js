@@ -179,11 +179,8 @@ export default class PixelMap {
                 let gx = (i+x);
                 let gy = (j+y);
                 if(gx<0||gx>=this.width||gy<0||gy>=this.height) { continue; }
-                let ix = ((gy * this.width) + gx) * 4;
-                this.pixels[ix] = col.r;
-                this.pixels[ix + 1] = col.g;
-                this.pixels[ix + 2] = col.b;
-                this.pixels[ix + 3] = col.a;
+                let pixel_i4 = ((gy * this.width) + gx) * 4;
+                this._setPixel_i4(pixel_i4, col);
             }
         }
         if (autoApply) { console.log("Applying"); this.ApplyPixels(); }
@@ -203,7 +200,6 @@ export default class PixelMap {
         if(brushSize <= 1) { this.DrawPixel(x, y, color, autoApply); /*return new Array(((this.width * y) + x)*4);*/ }
 
         var pixel_i4 = 0;
-        let edits = []; //int array
 
         const radius = brushSize/2;
         const radiusSquared = radius*radius;
@@ -220,7 +216,6 @@ export default class PixelMap {
                 if(distanceSquared<=radiusSquared) {
 
                     pixel_i4 = ((this.width * ey) + ex) * 4;
-                    edits.push(pixel_i4);
                     this._setPixel_i4(pixel_i4, color);
                 }
             }
@@ -240,10 +235,8 @@ export default class PixelMap {
         {
             let p = parts[i];
             if(p.type=="circle") {
-                if(p.cellBased) {
-                    
-                }
-                else{
+                if(p.cellBased) { }
+                else {
                     for(let j = 0; j < p.xyCoords.length; ++j) {
                         this.DrawEllipse(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
                     }
@@ -259,17 +252,12 @@ export default class PixelMap {
                 }
             }
             else if(p.type=="rect"){
-                if(p.cellBased){
-
-                }
-                else{
-                    this.DrawRect(p.x, p.y, p.width, p.height, p.color, false);
-                }
+                if(p.cellBased){ }
+                else { this.DrawRect(p.x, p.y, p.width, p.height, p.color, false); }
             }
         }
         //Apply the pixels (renders the texture to the sprite)
         if(parts.length>0 && autoApply) { this.ApplyPixels(); }
-        //canvas.drawLayer.update();
     }
     /**
      * 
@@ -279,7 +267,6 @@ export default class PixelMap {
     DrawStrokes(strokes, autoApply=true)
     {
         let parts = [];
-        console.log(strokes);
         for(let i = 0; i < strokes.length; ++i)
         {
             var steps = strokes[i].GetSteps(false);

@@ -20,6 +20,12 @@ export function webToHex(n) {
 export function hexToWeb(n) {
   return (`${n}`).replace('0x', '#');
 }
+export function affirmWebRGB(rgba){
+  let hex = webToHex(rgba);
+  let col32 = hexToColor(hex);
+  hex = colorToHex(col32);
+  return hexToWeb(hex);
+}
 
 /**
  * Converts a hexadecimal color to an integer percentage

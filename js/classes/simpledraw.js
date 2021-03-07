@@ -113,7 +113,7 @@ export default class SimpleDrawLayer extends DrawLayer {
             event.stopPropagation();
             NetSyncer.UndoLast();
             //Send undo command to clients
-            NetSyncer.sendUndoCommand();
+            NetSyncer.CmdSendUndo();
             }
         });
     }
@@ -131,6 +131,7 @@ export default class SimpleDrawLayer extends DrawLayer {
             this.op = true;
             // Check active tool
             const curTool = ToolsHandler.singleton.curTool;
+            if(curTool==null){return;}
             curTool.onPointerDown(data.p, data.pixelPos, e);
             // Call _pointermove so single click will still draw brush if mouse does not move
             this._pointerMove(e);
@@ -149,15 +150,16 @@ export default class SimpleDrawLayer extends DrawLayer {
         let data = this._cursorData(e);
 
         const curTool = ToolsHandler.singleton.curTool;
-        if(curTool==null){return;}
+        if(curTool==null) { return; }
         curTool.onPointerMove(data.p, data.pixelPos, e);
     }
     _pointerUp(e) {
         if(!this.isSetup){return;}
-    // Only react to left mouse button
+        // Only react to left mouse button
         if (e.data.button === 0) {
             let data = this._cursorData(e);
             const curTool = ToolsHandler.singleton.curTool;
+            if(curTool==null){return;}
             curTool.onPointerUp(data.p, data.pixelPos, e);
             // Push the history buffer
             this.history.commitHistory();

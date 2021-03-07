@@ -60,7 +60,7 @@ function recieveNetMsg(data){
       if(game.user.isGM) { NetSyncer.onClientJoin(); }
       break;
     case "strokeparts":
-      NetSyncer.onStrokePartsRecieved(data.parts);
+      NetSyncer.RpcStrokePartsRecieved(data.parts);
       break;
     case "texturerefreshed": NetSyncer.onRecieveTexture(); break;
     case "undo": NetSyncer.UndoLast();
@@ -100,11 +100,12 @@ Hooks.on('getSceneControlButtons', (controls) => {
               icon: 'fas fa-border-none',
               visible: layerInteractable(),
             },
-            /* {
-              name: 'box',
+            {
+              name: 'rect',
               title: "Rectangle",
               icon: 'far fa-square',
-            },
+              visible: layerInteractable(),
+            },/*
             {
               name: 'ellipse',
               title: "Ellipse",

@@ -44,6 +44,9 @@ export function getFoundrySceneSettings() {
 export async function setStrokes(data) {
   await setSetting("strokes", data);
 }
+/**
+ * @returns {{type:string, color:Color32, cellBased:boolean, brushSize: number, x:number, y:number, width:number, height:number, xyCoords:{x:number, y:number}[]}[]}
+ */
 export async function getStrokes() {
   return await getSetting("strokes");
 }

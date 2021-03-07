@@ -15,16 +15,18 @@ export default class ToolsHandler {
   static get singleton()
   {
     let th = canvas.betterDraw_ToolsHandler;
-    if(th==null){console.error("ToolsHandler singleton is null!");}
+    if(th==null) { console.error("ToolsHandler singleton is null!"); }
     return th;
   }
-  //Where do we store the singleton?
-
   constructor(){
+    //Where do we store the singleton?
     canvas.betterDraw_ToolsHandler = this;
     this.createAllTools();
   }
 
+  /**
+   * Define all new tools
+   */
   createAllTools() {
     this.tools = [];
     this.tools.push(new BrushTool("brush", "circle"));
@@ -34,10 +36,13 @@ export default class ToolsHandler {
     this.activeTool = "brush";
     this.toolPreviews = [];
   }
+
+  /**
+   * Creates new tool preview objects.
+   */
   createToolPreviews(layerobj) {
     //Destroy any objs of they are already existing
     this.destroyToolPreviews();
-    console.log("Creating tool preview objs");
 
     let ellipse = new ToolPreviewObj("ellipse");
     ellipse.setActive(false);
@@ -54,15 +59,22 @@ export default class ToolsHandler {
     layerobj.addChild(rect);
     this.toolPreviews.push(rect);
   }
+
+  /**
+   * Destroys the tool preview objects.
+   */
   destroyToolPreviews(){
     for(let i = 0; i < this.toolPreviews.length; ++i)
     {
       let t = this.toolPreviews[i];
       if(t){t.destroy();}
-      
     }
     this.toolPreviews = [];
   }
+  
+  /**
+   * Sanity check function that validates the health of the tool preview objects
+   */
   validateHealth(){
     //Check that our tool previews exist
     if(this.toolPreviews==null||this.toolPreviews==undefined||this.toolPreviews.length<1){
@@ -73,34 +85,45 @@ export default class ToolsHandler {
     }
     
   }
-  get curTool(){return this.getTool(this.activeTool);}
 
-  getTool(name){
+  /**
+   * Returns the active tool
+   * @returns {DrawTool}
+   */
+  get curTool() { if(this.activeTool=="NONE"){return null;} return this.getTool(this.activeTool); }
+
+  /**
+   * Fetches a DrawTool by matching its name to toolName
+   * @param {string} toolName
+   * @return {DrawTool}
+   */
+  getTool(toolName){
     for(let i = 0; i < this.tools.length; ++i)
     {
-      if(this.tools[i].name == name){return this.tools[i];}
+      if(this.tools[i].name == toolName) { return this.tools[i]; }
     }
-    console.error("Could not find a tool with the name " + name);
+    console.error("Could not find a tool with the name " + toolName);
     return null;
   }
+
   /**
-   * 
-   * @param {string} name
+   * Get the tool preview object of the specified tool
+   * @param {string} toolName
    * @return {ToolPreviewObj}
    */
-  getToolPreview(name) {
+  getToolPreview(toolName) {
     this.validateHealth();
     for(let i = 0; i < this.toolPreviews.length; ++i)
     {
-      if(this.toolPreviews[i].name == name){return this.toolPreviews[i];}
+      if(this.toolPreviews[i].name == toolName){return this.toolPreviews[i];}
     }
-    console.error("Could not find a tool preview object with the name " + name+". Tool previews available are: ");
+    console.error("Could not find a tool preview object with the name " + toolName+". Tool previews available are: ");
     console.error(this.toolPreviews);
     return null;
   }
 
   /**
-   * 
+   * Sets the active drawing tool.
    * @param {string} toolName 
    */
   setActiveTool(toolName) {
@@ -108,69 +131,48 @@ export default class ToolsHandler {
     if(toolName=="sceneConfig") { return; }
     this.activeTool = toolName;
     this.setPreviewTint();
-    //Ellipse shaped brush
-    if (toolName === 'brush') {
-      this.getToolPreview("ellipse").setActive(true);
-      //this.ellipsePreview.visible = true;
-      $('#betterdraw-brush-controls #brush-size-container').show();
-    }
-    else {
-      $('#betterdraw-brush-controls #brush-size-container').hide();
-    }
-    //Grid shaped brush
+
+    //Only show the Brush Size dropdown when certain tools are active
+    if(toolName=="brush" || toolName=="grid") { $('#brushsize_container').show(); }
+    else{ $('#brushsize_container').hide(); }
+
+    //Brush drawing tool
+    if (toolName === 'brush') { this.getToolPreview("ellipse").setActive(true); }
+    //Grid drawing tool
     if (toolName === 'grid') {
       if (canvas.scene.data.gridType === 1) { //We only work with square grids for now
         this.getToolPreview("grid").setActive(true);
-        /* this.boxPreview.width = canvas.scene.data.grid;
-        this.boxPreview.height = canvas.scene.data.grid;
-        this.boxPreview.visible = true; */
       }
-      else if ([2, 3, 4, 5].includes(canvas.scene.data.gridType)) {
+      //Other gridtypes (TODO?)
+      /* else if ([2, 3, 4, 5].includes(canvas.scene.data.gridType)) {
         //this._initGrid();
         //this.polygonPreview.visible = true;
-      }
+      } */
     }
-
-    if(toolName==='rect'){
-      this.getToolPreview("rect").setActive(true);
-    }
-    else {
-
-    }
+    //Rect drawing tool
+    if(toolName==='rect') { this.getToolPreview("rect").setActive(true);  }
   }
-/**
-     * Aborts any active drawing tools
-     */
+
+  /**
+  * Deactivates tool preview objects, and sets activeTool to NONE
+  */
   clearActiveTool() {
+    //Deactivate all tool previews
     for(let i = 0; i < this.toolPreviews.length; ++i)
-    {
-      this.toolPreviews[i].setActive(false);
-    }
-
-      // Box preview
-      //this.boxPreview.visible = false;
-      // Ellipse Preview
-      //this.ellipsePreview.visible = false;
-      // Shape preview
-      //this.polygonPreview.clear();
-      //this.polygonPreview.visible = false;
-      //this.polygonHandle.visible = false;
-      this.polygon = [];
-      // Cancel op flag
-      this.op = false;
+    { this.toolPreviews[i].setActive(false); }
+    this.activeTool = "NONE";
   }
+
+  /**
+   * Set the tint of the tool preview objects to its default value.
+   */
   setPreviewTint() {
     const vt = getSetting('vThreshold');
     const bo = 1;//hexToPercent(this.getUserSetting('brushOpacity')) / 100;
     let tint = 0xFF0000;
     if (bo < vt) tint = 0x00FF00;
     for(let i = 0; i < this.toolPreviews.length; ++i)
-    {
-      this.toolPreviews[i].tint = tint;
-    }
-    //this.ellipsePreview.tint = tint;
-    //this.boxPreview.tint = tint;
-    //this.polygonPreview.tint = tint;
+    { this.toolPreviews[i].tint = tint; }
   }
 }
 

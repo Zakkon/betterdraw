@@ -1,4 +1,4 @@
-import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings } from "../settings";
+import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings, setStrokes } from "../settings";
 import { savePNG } from "../classes/serializiation/saveload.js";
 import { LayerSettings } from "./layerSettings";
 import LoadAction from "./loadAction";
@@ -86,16 +86,13 @@ export class NetSyncer {
      * 
      * @param {StrokePart[]} parts 
      */
-    static sendStrokeUpdates(parts){
+    static CmdSendStrokeUpdates(parts){
         if(!NetSyncer.isMaster){return;}
         //going to straightup just send the parts as they are
         game.socket.emit('module.betterdraw', {event: "strokeparts", parts: parts});
     }
-    static sendUndoCommand(){
-        if(!NetSyncer.isMaster){return;}
-        game.socket.emit('module.betterdraw', {event: "undo"});
-    }
-    static sendRedoCommand(){
+    
+    static CmdSendRedo(){
         if(!NetSyncer.isMaster){return;}
         game.socket.emit('module.betterdraw', {event: "redo"});
     }
@@ -104,7 +101,7 @@ export class NetSyncer {
      * Called from the socket on the "strokeparts" event. Recieves an array of StrokeParts
      * @param {StrokePart[]} parts 
      */
-    static onStrokePartsRecieved(parts){
+    static RpcStrokePartsRecieved(parts){
         if(NetSyncer.isMaster){return;}
         //Tell the pixelmap to draw according to these instructions
         //Todo: make a timestamp comparison, to make sure we arent drawing out-of-date instructions
@@ -118,14 +115,15 @@ export class NetSyncer {
         return {buffer: data, width: width, height: height};
     }
     /**
-     * 
+     * Logs strokes to history, so they can be used in the Undo process later
      * @param {Stroke[]} stroke 
      */
     static LogPastStrokes(strokes)
     {
         if(!NetSyncer.isMaster){return;}
-        let strokeHistory = getSetting("strokes"); //Existing array of Strokes
+        let strokeHistory = getStrokes(); //Existing array of Strokes
         if(!strokeHistory) { strokeHistory = []; } //Create new array if none exists
+       
 
         let a = []; //New, merged array of Strokes
         for(let i = 0; i < strokeHistory.length; ++i) { a.push(strokeHistory[i]); }
@@ -135,7 +133,7 @@ export class NetSyncer {
             a.push(strokes[i]);
         }
 
-        setSetting("strokes", a);
+        setStrokes(a);
     }
     /**
      * 
@@ -168,27 +166,29 @@ export class NetSyncer {
         return a;
     }
 
+    static CmdSendUndo(){
+        if(!NetSyncer.isMaster){return;}
+        game.socket.emit('module.betterdraw', {event: "undo"});
+    }
     /**
      * Undo the last stroke
      */
     static async UndoLast() {
         let strokeHistory = await getStrokes(); //Existing array of Strokes
-        if(!strokeHistory || strokeHistory.length<1) { console.log("stroke history null"); return; }
-
+        if(!strokeHistory || strokeHistory.length<1) { return; } //Stroke histoy needs to exist
         //Tell our client to rollback to base texture, then draw all strokes except the last one
         //Get settings
         let settings = await getLayerSettings();
-        if(!settings){return;}
-        console.log(strokeHistory);
+        if(!settings) { return; } //Need layersettings to continue
         let layer = getDrawLayer();
-        //settings should contain a reference to the base texture, we want the buffer from that
+        //Settings should contain a reference to the base texture, we want the buffer from that
         if(settings.hasImageFile) {
             var {data, width, height} = await pixels('/betterdraw/uploaded/' + settings.imageFilename);
             //Then we tell the pixelmap to load from the buffer
             //warning: if base texture size and pixelmap size dont match, we might have a problem
             //could use readfrombuffer_scaled
             let buffer = Uint8ClampedArray.from(data);
-            layer.pixelmap.ReadFromBuffer(buffer, width, height, false); //dont apply yet
+            layer.pixelmap.ReadFromBuffer(buffer, width, height, false); //dont apply pixels yet
         }
         //if we cant get ahold of the base texture (we should), then see if the settings has a backgroundcolor, and create a buffer from that
         else {
@@ -196,10 +196,14 @@ export class NetSyncer {
             layer.pixelmap.DrawRect(0,0, layer.pixelmap.width, layer.pixelmap.height, hexToColor(webToHex(settings.backgroundColor)), false); //Dont apply yet
         }
         
+        console.log("Past strokes: ");
+        console.log(strokeHistory);
+        console.log("Removing stroke: ");
+        console.log(strokeHistory[strokeHistory.length-1]);
         strokeHistory.splice(strokeHistory.length-1, 1); //Remove the latest stroke from the history
         //Draw the strokes onto the pixelmap
-        canvas.drawLayer.pixelmap.DrawStrokeParts(strokeHistory, false);
-        canvas.drawLayer.pixelmap.ApplyPixels();//and apply
+        layer.pixelmap.DrawStrokeParts(strokeHistory, false);
+        layer.pixelmap.ApplyPixels(); //and apply
     }
 
     /**
