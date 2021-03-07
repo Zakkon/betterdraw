@@ -2,8 +2,9 @@ import ToolPreviewObj from "./tools/toolPreviewObj.js";
 import DrawingHistory from "./drawingHistory.js";
 import DrawLayer from "./drawlayer.js";
 import ToolsHandler from "./tools/toolsHandler.js";
-import { QuicksaveLayer, saveLayer } from "./serializiation/saveload.js";
+import { QuicksaveLayer } from "./serializiation/saveload.js";
 import { NetSyncer } from "./netSyncer.js";
+import { worldPosToPixelPos } from "../helpers.js";
 
 export default class SimpleDrawLayer extends DrawLayer {
 
@@ -18,8 +19,6 @@ export default class SimpleDrawLayer extends DrawLayer {
         this.pointer = 0;
         this.gridLayout = {};
         this.dragStart = { x: 0, y: 0 };
-        // Not actually used, just to prevent foundry from complaining
-        //this.history = [];
         this.BRUSH_TYPES = {
           ELLIPSE: 0,
           BOX: 1,
@@ -41,45 +40,14 @@ export default class SimpleDrawLayer extends DrawLayer {
         this.isSetup = false;
     }
     /**
-     * 
      * @param {string} tool 
      */
-    setActiveTool(tool) { //string
+    setActiveTool(tool) {
         ToolsHandler.singleton.setActiveTool(tool);
-        return;
-        this.clearActiveTool();
-        this.activeTool = tool;
-        this.setPreviewTint();
-        if (tool === 'brush') {
-          this.ellipsePreview.visible = true;
-          $('#betterdraw-brush-controls #brush-size-container').show();
-        }
-        else {
-          $('#betterdraw-brush-controls #brush-size-container').hide();
-        }
-        if (tool === 'grid') {
-          if (canvas.scene.data.gridType === 1) {
-            this.boxPreview.width = canvas.scene.data.grid;
-            this.boxPreview.height = canvas.scene.data.grid;
-            this.boxPreview.visible = true;
-          }
-          else if ([2, 3, 4, 5].includes(canvas.scene.data.gridType)) {
-            this._initGrid();
-            this.polygonPreview.visible = true;
-          }
-        }
     }
     
     setPreviewTint() {
         ToolsHandler.singleton.setPreviewTint();
-        return;
-        const vt = getSetting('vThreshold');
-        const bo = 1;//hexToPercent(this.getUserSetting('brushOpacity')) / 100;
-        let tint = 0xFF0000;
-        if (bo < vt) tint = 0x00FF00;
-        this.ellipsePreview.tint = tint;
-        //this.boxPreview.tint = tint;
-        //this.polygonPreview.tint = tint;
     }
 
     /**
@@ -96,17 +64,6 @@ export default class SimpleDrawLayer extends DrawLayer {
      * Aborts any active drawing tools
      */
     clearActiveTool() {
-        // Box preview
-        //this.boxPreview.visible = false;
-        // Ellipse Preview
-        this.ellipsePreview.visible = false;
-        // Shape preview
-        //this.polygonPreview.clear();
-        //this.polygonPreview.visible = false;
-        //this.polygonHandle.visible = false;
-        //this.polygon = [];
-        // Cancel op flag
-        this.op = false;
         // Clear history buffer
         this.history.clearBuffer();
     }
@@ -115,13 +72,13 @@ export default class SimpleDrawLayer extends DrawLayer {
      /**
    * Adds the mouse listeners to the layer
    */
-  _registerMouseListeners() {
-    this.addListener('pointerdown', this._pointerDown);
-    this.addListener('pointerup', this._pointerUp);
-    this.addListener('pointermove', this._pointerMove);
-    this.dragging = false;
-    this.brushing = false;
-}
+    _registerMouseListeners() {
+        this.addListener('pointerdown', this._pointerDown);
+        this.addListener('pointerup', this._pointerUp);
+        this.addListener('pointermove', this._pointerMove);
+        this.dragging = false;
+        this.brushing = false;
+    }
     /**
     * Adds the keyboard listeners to the layer
     */
@@ -201,67 +158,21 @@ export default class SimpleDrawLayer extends DrawLayer {
             this.history.commitHistory();
         }
     }
+    /** Returns mouse position in worldspace (p) and canvas space (pixelPos)
+     * @return {p:{x:number,y:number}, pixelPos:{x:number, y:number}}
+     */
     _cursorData(e){
          //Position in relation to drawLayer (used to position graphical object)
         const p = e.data.getLocalPosition(canvas.drawLayer);
         let r = canvas.dimensions.sceneRect;
         //Pixel on the drawlayer (needs rounding)
-        //let pixelPos = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
-        let pixelPos = SimpleDrawLayer.worldPosToPixelPos(p);
+        let pixelPos = worldPosToPixelPos(p);
 
         // Round positions to nearest pixel
         //If we want to round to a square pixel, rounding down is more accurate, as the value only changes once the cursor moves onto a new pixel, not whenever it happens to be closer to the top-left of another pixel
         pixelPos.x = Math.floor(pixelPos.x);
         pixelPos.y = Math.floor(pixelPos.y);
         return {p:p, pixelPos: pixelPos};
-    }
-    static worldPosToPixelPos(worldPos){
-        //Point in worldspace to pixel on the scene canvas
-        //Used primarily in mouse cursor transformations
-        const l = canvas.drawLayer.layer.transform;
-        let pixelPos = {x:(worldPos.x-l.position.x)/l.scale.x, y:(worldPos.y-l.position.y)/l.scale.y};
-        return pixelPos;
-    }
-    static pixelPosToWorldPos(pixelPos)
-    {
-        //Point on the scene canvas to point in worldspace
-        //Used primarily in mouse cursor transformations
-        const l = canvas.drawLayer.layer.transform;
-        //think this is right, hasnt been tested
-        let worldPos = {x:(pixelPos.x*l.scale.x)+l.position.x, y:(pixelPos.y*l.scale.y)+l.position.y};
-        return worldPos;
-    }
-
-    /**
-     * Brush Tool
-     */
-    _pointerDownBrush() {
-        this.op = true;
-    }
-    _pointerMoveBrush(p) {
-        const size = this.getUserSetting('brushSize');
-        this.ellipsePreview.width = size * 2;
-        this.ellipsePreview.height = size * 2;
-        this.ellipsePreview.x = p.x;
-        this.ellipsePreview.y = p.y;
-        // If drag operation has started
-        if (this.op) {
-            // Send brush movement events to renderbrush to be drawn and added to history stack
-            this.renderBrush({
-            shape: this.BRUSH_TYPES.ELLIPSE,
-            x: p.x,
-            y: p.y,
-            fill: getUserSetting('brushOpacity'),
-            width: getUserSetting('brushSize'),
-            height: getUserSetting('brushSize'),
-            });
-        }
-    }
-
-    static Listen(data){
-        console.log("MSG RECIEVED!");
-        
-        console.log(data);
     }
 }
 

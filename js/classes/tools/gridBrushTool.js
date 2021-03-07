@@ -1,5 +1,5 @@
 import { getUserSetting } from "../../settings";
-import { isNullNumber, webToHex } from "../../helpers"
+import { isNullNumber, pixelPosToWorldPos, webToHex } from "../../helpers"
 import BrushTool from "./brushTool";
 import { LayerSettings } from "../layerSettings";
 import ToolsHandler from "./toolsHandler";
@@ -23,14 +23,13 @@ export default class GridBrushTool extends BrushTool {
         //Todo: cursor object
         const preview = ToolsHandler.singleton.getToolPreview("grid");
 
-        //this.positionCursorClamped(preview, p.x, p.y, size, size, gridX, gridY);
-        let wp = SimpleDrawLayer.pixelPosToWorldPos(pixelPos);
+        const wp = pixelPosToWorldPos(pixelPos);
         this.positionCursor(preview, wp.x, wp.y, size, size);
 
         //If we have begun our stroke
         if (this.op) {
             const gridSize = LayerSettings.pixelsPerGrid;
-            if(isNullNumber(gridSize)) {console.error("current gridsize is invalid!"); }
+            if(isNullNumber(gridSize)) {console.error("LayerSettings.pixelsPerGrid is invalid!" + gridSize); }
             const gridX = Math.floor(pixelPos.x / gridSize);
             const gridY = Math.floor(pixelPos.y / gridSize);
 

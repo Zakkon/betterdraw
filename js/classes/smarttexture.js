@@ -2,12 +2,15 @@ const encode = require('image-encode');
 
 export default class SmartTexture extends PIXI.RenderTexture {
 
-    
-    encodeToPNG() {
+    /**
+     * Encodes the data currently stored in the texture buffer into a PNG buffer
+     * @return {Buffer}
+     */
+    EncodeToPNG() {
         let bytes = [];
         let buffer;
         try{
-            bytes = Array.from(this.getRawTextureData());
+            bytes = Array.from(this._getRawTextureData());
             console.log("Got the raw texture data!");
             var a = encode([bytes], [this.width, this.height], 'png'); //there seems to be a max file size limit here, 7000x7000 is apparently too big. might need to do it async
             console.log("texture has been encoded");
@@ -19,10 +22,10 @@ export default class SmartTexture extends PIXI.RenderTexture {
         }
         return buffer;
     }
-    getRawTextureData() { //target = rendertexture, hopefully
-        return this.readPixels(0,0,this.width, this.height);
+    _getRawTextureData() { //target = rendertexture, hopefully
+        return this._readPixels(0,0,this.width, this.height);
     }
-    readPixels(x, y, width, height) { //renderer = canvas.app
+    _readPixels(x, y, width, height) { //renderer = canvas.app
         const { renderer } = canvas.app; //lets just set this here, for now
         let resolution;
         let renderTexture = this;
@@ -40,11 +43,11 @@ export default class SmartTexture extends PIXI.RenderTexture {
         gl.readPixels(x * resolution, y * resolution, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
         return pixels;
     }
-    getPixel(byteArray, x, y, width, bytesPerPixel=4){
+    _getPixel(byteArray, x, y, width, bytesPerPixel=4){
         const i = ((width*y)+x) * bytesPerPixel;
         return [byteArray[i], byteArray[i+1], byteArray[i+2], byteArray[+3]];
     }
-    resize(width, height){super.resize(width, height, true);}
+    Resize(width, height){super.resize(width, height, true);}
     /**
      * 
      * @param {number} width 
@@ -121,12 +124,4 @@ export default class SmartTexture extends PIXI.RenderTexture {
         return pixel;
       }
     static get_gl(){return canvas.app; }
-
-    Apply(){
-        //Apply pixels to rendertexture
-        const tex = PIXI.Texture.fromBuffer(buffer,width,height);
-        const sprite = new PIXI.Sprite(tex);
-        const gl = get_gl();
-        gl.renderer.render(sprite, this);
-    }
 }

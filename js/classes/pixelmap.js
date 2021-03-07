@@ -1,4 +1,5 @@
 import { createThAWImage, resampleImage, ResamplingMode } from "thaw-image-processing.ts";
+import { hexToColor, webToHex } from "../helpers";
 import Color32 from "./color32";
 import DrawLayer from "./drawlayer";
 import { LayerSettings } from "./layerSettings";
@@ -9,27 +10,10 @@ import { StrokePart } from "./tools/strokePart";
 export default class PixelMap {
 
     constructor(width, height, options) {
-        this.defaultColor = new Color32(255,255,0,255);
+        this.defaultColor = hexToColor(webToHex(LayerSettings.DefaultBackgroundColor())); //DEFAULT COLOR OF THE PIXELMAP
         this.texture = this._newTexture(width, height);
         this._reform(width, height, this.defaultColor);
-    }
-
-    _reform(width, height, color) {
-        this.width = width; this.height = height;
-        this.pixels = new Uint8ClampedArray(width*height*4);
-        for(var i = 0; i < this.pixels.length; i+=4)
-        {
-            this.pixels[i] = color.r;
-            this.pixels[i+1] = color.g;
-            this.pixels[i+2] = color.b;
-            this.pixels[i+3] = color.a;
-        }
-        if((this.width!=this.texture.width)||(this.height!=this.texture.height)) //Resize texture if needed
-        {
-            this.texture.resize(this.width, this.height);
-        }
-        //Set texture filtermode to point?
-        //this.ApplyPixels();
+        //Wont have any effect until ApplyPixels() is called
     }
     
     /**
@@ -51,7 +35,7 @@ export default class PixelMap {
         {
             this.width = bufferWidth; this.height = bufferHeight;
             //the texture needs to be resized
-            this.texture.resize(this.width, this.height);
+            this.texture.Resize(this.width, this.height);
         }
         if(applyPixels) { this.ApplyPixels(); }
     }
@@ -69,11 +53,7 @@ export default class PixelMap {
         //Simple check to make sure the buffer is the same size as stated
         if(buffer.length != (bufferWidth*bufferHeight*4)){console.error("buffer is of the wrong size!"); return;}
         //Create a new scaled down texture (our width/height), which used the buffer. Once the texture is made, we read our scaled buffer from it
-        //const newBuffer = this.sample(buffer, {width:bufferWidth, height:bufferHeight}, this.width, this.height, PIXI.settings.SCALE_MODE.NEAREST);
-        //this.ReadFromBuffer(newBuffer, this.width, this.height, applyPixels);
 
-        //BytesPerLine might be wrong, no idea
-        console.log("Resampling a "+bufferWidth+"x"+bufferHeight+" texture to a "+toWidth+"x"+toHeight+" texture");
         const srcImage = createThAWImage(bufferWidth, bufferHeight, 4, 4*bufferWidth, buffer);
         const dstImage = resampleImage(
             srcImage,
@@ -83,17 +63,58 @@ export default class PixelMap {
         );
         this.ReadFromBuffer(dstImage.data, toWidth, toHeight, applyPixels);
     }
+    /**
+     * 
+     * @param {number} width 
+     * @param {number} height 
+     * @param {Color32} color 
+     * @param {boolean} applyPixels 
+     */
     Reform(width, height, color, applyPixels=true)
     {
+        if(width<1||height<1){
+            console.error("Cannot reform pixelmap, width & height are out of range! Width: " + width + ", Height: " + height);
+            return;
+        }
         this._reform(width, height, color);
         if(applyPixels) { this.ApplyPixels(); }
     }
-
-
-    GetPixel(x, y) {
-        const i = ((y * this.width) + x) * 4;
-        return new Color32(this.pixels[i], this.pixels[i + 1], this.pixels[i + 2], this.pixels[i + 3]);
+/**
+     * 
+     * @param {number} width 
+     * @param {number} height 
+     * @param {Color32} color 
+     */
+    _reform(width, height, color) {
+        this.width = width; this.height = height;
+        this.pixels = new Uint8ClampedArray(width*height*4);
+        for(var i = 0; i < this.pixels.length; i+=4)
+        {
+            this.pixels[i] = color.r;
+            this.pixels[i+1] = color.g;
+            this.pixels[i+2] = color.b;
+            this.pixels[i+3] = color.a;
+        }
+        if((this.width!=this.texture.width)||(this.height!=this.texture.height)) //Resize texture if needed
+        {
+            this.texture.Resize(this.width, this.height);
+        }
+        //Apply pixels should be called from elsewhere after this
     }
+    /**
+     * Returns a pixel from the buffer
+     * @param {number} x 
+     * @param {number} y 
+     * @returns {Color32}
+     */
+    GetPixel(x, y) { return this._getPixel_i4(this._xy_to_i4(x,y)); }
+    /**
+     * Returns the pixels in a rectangle
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} areaWidth 
+     * @param {number} areaHeight 
+     */
     GetPixelsRect(x, y, areaWidth, areaHeight) {
 
         var l = new Uint8ClampedArray[(w * h * 4)];
@@ -111,8 +132,21 @@ export default class PixelMap {
         }
         return l;
     }
+    _setPixel(x, y, color){
+        this._setPixel_i4(this._xy_to_i4(x,y), color);
+    }
+    _setPixel_i4(i4, color){
+        this.pixels[i4] = color.r;
+        this.pixels[i4 + 1] = color.g;
+        this.pixels[i4 + 2] = color.b;
+        this.pixels[i4 + 3] = color.a;
+    }
+    _getPixel_i4(i4) {
+        return new Color32(this.pixels[i4], this.pixels[i4 + 1], this.pixels[i4 + 2], this.pixels[i4 + 3]);
+    }
+    _xy_to_i4(x,y){return ((y * this.width) + x) * 4;}
     /**
-     * 
+     * Draw a single pixel
      * @param {number} x 
      * @param {number} y 
      * @param {Color32} color 
@@ -123,7 +157,7 @@ export default class PixelMap {
         if(autoApply){ this.ApplyPixels();}
     }
      /**
-     * 
+     * Draw a rectangle
      * @param {number} x 
      * @param {number} y 
      * @param {number} w 
@@ -155,14 +189,14 @@ export default class PixelMap {
         if (autoApply) { console.log("Applying"); this.ApplyPixels(); }
     }
     /**
-     * 
+     * Draw an ellipse
      * @param {number} x 
      * @param {number} y 
      * @param {number} brushSize 
      * @param {Color32} color 
      * @param {boolean} autoApply 
      */
-    DrawCircle(x, y, brushSize, color, autoApply=false)
+    DrawEllipse(x, y, brushSize, color, autoApply=false)
     {
         if(brushSize===undefined){console.error("BrushSize is undefined!");}
         const useAdditiveColors = false;
@@ -192,41 +226,7 @@ export default class PixelMap {
             }
         }
 
-        /* const brushSq = brushSize * brushSize;
-        const brushX4 = brushSq << 2;
-        const brushX1 = brushSize << 1;
-        for (let i = 0; i < brushX4; i++)
-        {
-            let tx = (i % brushX1) - brushSize;
-            let ty = Math.floor(i / brushX1) - brushSize;
-
-            if (tx * tx + ty * ty > brushSq) {continue;}
-            if (x + tx < 0 || y + ty < 0 || x + tx >= this.width || y + ty >= this.height) {continue;} // temporary fix for corner painting
-
-            pixel_i4 = (this.width * (y + ty) + x + tx) << 2;
-            edits.push(pixel_i4);
-
-            if (useAdditiveColors)
-            {
-                //if (!useLockArea || (useLockArea && lockMaskPixels[pixel] == 1))
-                //{
-                    //pixels[pixel] = ByteLerp(pixels[pixel], paintColor.r, alphaLerpVal);
-                    //pixels[pixel + 1] = ByteLerp(pixels[pixel + 1], paintColor.g, alphaLerpVal);
-                    //pixels[pixel + 2] = ByteLerp(pixels[pixel + 2], paintColor.b, alphaLerpVal);
-                    //pixels[pixel + 3] = ByteLerp(pixels[pixel + 3], paintColor.a, alphaLerpVal);
-                //}
-            }
-            else
-            { // no additive, just paint my color
-                //if (!useLockArea || (useLockArea && lockMaskPixels[pixel] == 1))
-                //{
-                this._setPixel_i4(pixel_i4, color);
-                //}
-            } // if additive
-        } // for area */
-
         if (autoApply) { this.ApplyPixels(); }
-        /*return edits;*/
     }
 
     /**
@@ -245,7 +245,7 @@ export default class PixelMap {
                 }
                 else{
                     for(let j = 0; j < p.xyCoords.length; ++j) {
-                        this.DrawCircle(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
+                        this.DrawEllipse(p.xyCoords[j].x, p.xyCoords[j].y, p.brushSize, p.color, false);
                     }
                 }
             }
@@ -290,35 +290,26 @@ export default class PixelMap {
         this.DrawStrokeParts(parts, false);
         if(parts.length>0&&autoApply){this.ApplyPixels();}
     }
-    _setPixel(x, y, color){
-        const i4 = ((y * this.width) + x) * 4;
-        this._setPixel_i4(i4, color);
-    }
-    _setPixel_i4(i4, color){
-        this.pixels[i4] = color.r;
-        this.pixels[i4 + 1] = color.g;
-        this.pixels[i4 + 2] = color.b;
-        this.pixels[i4 + 3] = color.a;
-    }
+    
     /**
      * Applies the texture buffer (including any recent changes) to the rendered texture in the scene
      */
     ApplyPixels() {
         const gl = canvas.app;
         const tex = PIXI.Texture.fromBuffer(this.pixels, this.width, this.height);
-        //console.log("tex: " + (tex!==undefined));
         const sprite = new PIXI.Sprite(tex);
-        //console.log("sprite: " + (sprite!==undefined));
 
         //Great, we now have a sprite with the correct pixels
         //Now we need to apply this sprite onto the rendertexture somehow
 
-        //gl.stage.addChild(sprite);
         var rt = this.texture;//canvas.drawLayer.maskTexture;
         gl.renderer.render(sprite, rt);
         sprite.destroy();
         tex.destroy();
     }
+    /**
+     * Does a health check on the base texture, and tries to recreate it if its missing
+     */
     checkHealth(){
         let needsTextureRepair = false;
         if(this.texture==null||this.tex==undefined){needsTextureRepair=true;}
@@ -326,11 +317,11 @@ export default class PixelMap {
 
         if(needsTextureRepair){
             console.error("Pixelmap.texture seems to have been destroyed! Replacing...");
-            this.recreateTexture();
+            this.RecreateTexture();
             this.ApplyPixels();
         }
     }
-    recreateTexture(){
+    RecreateTexture(){
         this.texture = this._newTexture(this.width, this.height);
     }
     /**
@@ -342,21 +333,8 @@ export default class PixelMap {
     _newTexture(width, height, scaleMode=PIXI.SCALE_MODES.NEAREST){
         return SmartTexture.create(width, height, scaleMode); //Format should be RGBA32, i think
     }
-    RenderBrush(brush){
-        this._brushToBuffer(brush);
-        //canvas.app.renderer.render(brush, this.texture, false, null, false);
-    }
-    _brushToBuffer(brush)
-    {
-        //console.log(brush);
-        //const pixelX = Math.round(brush.x/50);
-        //const pixelY = Math.round(brush.y/50);
-        //console.log({x:pixelX, y:pixelY});
-        this.DrawPixel(brush.x, brush.y, brush.fill, true);
-        //this.DrawRect(0,0,50,50, brush.fill, true);
-    }
 
-    sample(source, fromArea, newWidth, newHeight, scaleMode)
+    _sample(source, fromArea, newWidth, newHeight, scaleMode)
     {
         const rawTex = SmartTexture.Sample(source, newWidth, newHeight, scaleMode);
         return rawTex;

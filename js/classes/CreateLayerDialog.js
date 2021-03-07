@@ -32,7 +32,7 @@ export default class CreateLayerDialog extends FormApplication {
       gridSize: 1,
       sceneWidth: 50,
       sceneHeight: 50,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: LayerSettings.DefaultBackgroundColor(),
     };
   }
 
