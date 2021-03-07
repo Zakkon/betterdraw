@@ -1,8 +1,7 @@
 import { createThAWImage, resampleImage, ResamplingMode } from "thaw-image-processing.ts";
 import { hexToColor, webToHex } from "../helpers";
-import Color32 from "./color32";
-import DrawLayer from "./drawlayer";
-import { LayerSettings } from "./layerSettings";
+import Color32 from "../color32";
+import { LayerSettings } from "../layer/layerSettings";
 import SmartTexture from "./smarttexture";
 
 export default class PixelMap {

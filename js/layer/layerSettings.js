@@ -1,5 +1,4 @@
-import { getSetting, setSetting, getFoundrySceneSettings } from "../settings";
-import Color32 from "./color32";
+import Color32 from "../color32";
 var pixels = require('image-pixels');
 
 export class LayerSettings{

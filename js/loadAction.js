@@ -1,11 +1,9 @@
 var pixels = require('image-pixels');
-import { data } from "jquery";
-import { calcGridImportSize, getDrawLayer, hexToColor, isNullNumber, webToHex, sleep, setLayerControlsInteractable } from "../helpers.js";
-import { getSetting, setLayerSettings, setSetting } from "../settings.js";
-import Color32 from "./color32.js";
-import { LayerSettings } from "./layerSettings.js";
-import { SaveLayer } from "./serializiation/saveload.js";
+import { calcGridImportSize, getDrawLayer, hexToColor, isNullNumber, webToHex, sleep, setLayerControlsInteractable } from "./helpers.js";
+import { getSetting, setLayerSettings, setSetting } from "./settings.js";
+import { LayerSettings } from "./layer/layerSettings.js";
 import ToolsHandler from "./tools/toolsHandler.js";
+import { SaveLayer } from "./serializiation/saveload.js";
 
 export default class LoadAction {
 
@@ -187,8 +185,6 @@ export default class LoadAction {
         console.error(settings);
     }
 
-     
-
     /**
      * Very heavy function that updates the entire Foundry scene. Use only when nessesary.
      * @param {number} pixelsPerGrid 
@@ -226,7 +222,7 @@ export default class LoadAction {
     }
 
     _preRescale(){
-        ToolsHandler.singleton.destroyToolPreviews();
+        ToolsHandler.singleton.destroyToolCursors();
         const drawLayer = getDrawLayer();
         var l = drawLayer.layer;
         if(l===null||l._destroyed){

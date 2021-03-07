@@ -1,8 +1,9 @@
 import { webToHex, hexToWeb, redrawScene, affirmWebRGB } from '../helpers.js';
-import { getUserSetting, setUserSetting, setSetting, getSetting } from "../../js/settings.js";
-import ToolsHandler from '../../js/classes/tools/toolsHandler.js';
-import { LayerSettings } from '../../js/classes/layerSettings.js';
-import LoadAction from '../../js/classes/loadAction.js';
+import { getUserSetting, setUserSetting, setSetting, getSetting } from "../settings.js";
+import ToolsHandler from '../tools/toolsHandler.js';
+import { LayerSettings } from '../layer/layerSettings.js';
+import LoadAction from '../loadAction.js';
+import { NetSyncer } from '../netSyncer.js';
 
 export default class CreateLayerDialog extends FormApplication {
   static get defaultOptions() {
@@ -52,7 +53,6 @@ export default class CreateLayerDialog extends FormApplication {
     // If save button was clicked, close app
     if (event.submitter && event.submitter.name === 'submit') {
 
-        console.log("GridSize: " + formData.gridSize);
         
         
         //Setup a layer
@@ -83,7 +83,7 @@ export default class CreateLayerDialog extends FormApplication {
   }
 
   preRescale(){
-    ToolsHandler.singleton.destroyToolPreviews();
+    ToolsHandler.singleton.destroyToolCursors();
   }
 
   async onOptionsVerified(options){
@@ -92,10 +92,11 @@ export default class CreateLayerDialog extends FormApplication {
       if (val.id === 'betterdraw-newlayer-dialog') val.close();});
     //Parse together the options as a LayerSettings
     var s = await LayerSettings.ParseSettings(options);
-    console.log(s);
     //Use the options to create a new layer
     var task = new LoadAction();
     await task.Perform(s);
+    //Send a net message here, telling clients that a new layer has been created?
+    NetSyncer.CmdOnLayerCreated();
     await redrawScene();
     //LayerSettings.SaveLayer();
   }

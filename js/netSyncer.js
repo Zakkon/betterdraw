@@ -1,9 +1,8 @@
-import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings, setStrokes } from "../settings";
-import { savePNG } from "../classes/serializiation/saveload.js";
-import { LayerSettings } from "./layerSettings";
+import { setSetting, getSetting, getStrokes, getLayerSettings, setLayerSettings, setStrokes } from "./settings";
+import { LayerSettings } from "./layer/layerSettings";
 import LoadAction from "./loadAction";
-import { Stroke } from "./tools/stroke";
-import { getDrawLayer, hexToColor, webToHex } from "../helpers";
+import { Stroke } from "./syncing/stroke";
+import { getDrawLayer, hexToColor, redrawScene, webToHex } from "./helpers";
 import Color32 from "./color32";
 var pixels = require('image-pixels');
 
@@ -13,6 +12,22 @@ export class NetSyncer {
      * Returns true if the local client is the GM.
      */
     static get isMaster() { return game.user.isGM; }
+
+    static ParseMessage(data){
+        switch(data.event){
+            case "onClientJoin": //A new client has just connected/reloaded their scene
+              if(NetSyncer.isMaster) { NetSyncer.onClientJoin(); }
+              break;
+            case "strokeparts":
+              NetSyncer.RpcStrokeUpdatesRecieved(data.parts);
+              break;
+            case "layerCreated": NetSyncer.RpcOnLayerCreated(data.sceneID); break;
+            case "layerDestroyed": NetSyncer.RpcOnLayerDestroyed(data.sceneID); break;
+            case "texturerefreshed": NetSyncer.onRecieveTexture(); break;
+            case "undo": NetSyncer.RpcSendUndo();
+            default: console.error("message event " + data.event + " is not recognized"); break;
+          }
+    }
 
     /**
      * Called from the onReady hook in Foundry
@@ -24,6 +39,8 @@ export class NetSyncer {
             game.socket.emit('module.betterdraw', {event: "onClientJoin"});
         }
     }
+
+
     /**
      * Called from the updateScene hook in Foundry
      */
@@ -34,10 +51,8 @@ export class NetSyncer {
         NetSyncer.refreshLayerTexture();
     }
     static async refreshLayerTexture() {
-        console.log("Refreshing layer texture...");
         //Fetch layer info from sceneflags
-        const settings = getSetting("drawlayerinfo");
-        console.log(settings);
+        const settings = getLayerSettings();
         if(settings.active && settings.hasBuffer) {
           //The layer is active, and a buffer has been cached
           const buffer = getSetting("buffer");
@@ -46,8 +61,10 @@ export class NetSyncer {
           console.log(pixelmap.width*pixelmap.height);
           pixelmap.ReadFromBuffer(bufferArray, pixelmap.width, pixelmap.height, true);
         }
-        else if(!settings.active) { console.log("Layer was not active"); }
-        else {console.error("Layer did not have a buffer ready for us");}
+        else if(!settings.active) {
+            //Layer is not active. Do nothing.
+         }
+        else  {console.error("Layer did not have a buffer ready for us");}
     }
     /**
      * Called from the socket whenever a client in the session has loaded/reloaded their scene
@@ -61,14 +78,21 @@ export class NetSyncer {
     }
     static async onRecieveTexture() {
         if(NetSyncer.isMaster) { return; }
-        console.log("Recieved notice that image file has been refreshed. Loading image file...");
-        var a = await NetSyncer.loadImageFile();
-        let settings = getSetting("drawlayerinfo");
-
-        let e = await LayerSettings.LoadFromBuffer(settings, a.buffer, a.width, a.height);
+        //Recieved notice from the GM that the source layer image has been refreshed. Fetching it from the server...
+        var img = await NetSyncer.loadImageFile();
+        let settings = await getLayerSettings();
+        //Refresh our local version of the layersettings (is there even such a thing as that?) to include the buffer from the source layerimage
+        let e = await LayerSettings.LoadFromBuffer(settings, img.buffer, img.width, img.height);
+        //Perform a loadaction, to refresh the layer object texture, and make sure everthing is ready to go
         let task = new LoadAction();
         task.Perform(e);
     }
+    static async loadImageFile() {
+        var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
+        //console.log(data);
+        return {buffer: data, width: width, height: height};
+    }
+
     /**
      * Called by the authorative client whenever a stroke has finished and its effects have been applied onto the pixelmap
      */
@@ -77,17 +101,7 @@ export class NetSyncer {
        
         //this.updateSceneFlags(); //lazy
     }
-    static async updateSceneFlags(){
-        //Apply the pixelmap buffer to the scene flags
-        await setSetting("buffer", canvas.drawLayer.pixelmap.pixels);
-        //Clients should now have onUpdateScene called
-    }
-    
-    
-    static CmdSendRedo(){
-        if(!NetSyncer.isMaster){return;}
-        game.socket.emit('module.betterdraw', {event: "redo"});
-    }
+   
 
     /**
     * 
@@ -110,11 +124,7 @@ export class NetSyncer {
         layer.pixelmap.DrawStrokeParts(parts);
     }
 
-    static async loadImageFile() {
-        var {data, width, height} = await pixels('/betterdraw/uploaded/image.png');
-        //console.log(data);
-        return {buffer: data, width: width, height: height};
-    }
+   
     /**
     * Logs strokes to history, so they can be used in the Undo process later
     * @param {Stroke[]} strokes
@@ -136,40 +146,15 @@ export class NetSyncer {
 
         setStrokes(a);
     }
-    /**
-     * 
-     * @param {Stroke} stroke 
-     */
-    static _encodeStroke(stroke){
-        //assume circle for now
-        let o = {};
-        o.brushSize = stroke.brushSize;
-        o.color = stroke.color;
-        o.xyCoords = stroke.xyCoords;
-        o.cellBased = stroke.cellBased;
-        return o;
-    }
-    static _decodeStroke(data){
-        let s = new Stroke(data.type, data.brushSize, data.color, data.cellBased);
-        s.xyCoords = data.xyCoords;
-        return s;
-    }
-    /**
-     * 
-     * @param {any[]} sceneFlagStrokeHistory 
-     */
-    static DecodeStrokes(sceneFlagStrokeHistory){
-        let a = [];
-        for(let i = 0; i < sceneFlagStrokeHistory.length; ++i){
-            //a.push(this._decodeStroke(sceneFlagStrokeHistory[i]));    
-            a.push(sceneFlagStrokeHistory[i]);   
-        }
-        return a;
-    }
 
     static CmdSendUndo(){
         if(!NetSyncer.isMaster){return;}
+        this.UndoLast(); //Call it here on my local end
         game.socket.emit('module.betterdraw', {event: "undo"});
+    }
+    static RpcSendUndo(){
+        if(NetSyncer.isMaster){return;}
+        this.UndoLast();
     }
     /**
      * Undo the last stroke
@@ -202,6 +187,10 @@ export class NetSyncer {
         layer.pixelmap.DrawStrokeParts(strokeHistory, false);
         layer.pixelmap.ApplyPixels(); //and apply
     }
+    static CmdSendRedo(){
+        if(!NetSyncer.isMaster){return;}
+        game.socket.emit('module.betterdraw', {event: "redo"});
+    }
 
     /**
      * 
@@ -224,5 +213,30 @@ export class NetSyncer {
     static RpcSetVisible(visible){
         if(NetSyncer.isMaster){return;}
         const l = getDrawLayer(); l.SetVisible(visible);
+    }
+
+    static CmdOnLayerCreated() {
+        if(!NetSyncer.isMaster){return;}
+        let sceneID = canvas.scene.id;
+        game.socket.emit('module.betterdraw', {event: "layerCreated", sceneID: sceneID});
+    }
+    static RpcOnLayerCreated(sceneID){
+        if(NetSyncer.isMaster){return;}
+        //Only redraw if i am on the same scene as the one that just had its layer created
+        console.log("Recieved onlayercreated");
+        let mySceneID = (canvas? (canvas.scene? canvas.scene.id : undefined) : undefined);
+        if(mySceneID==undefined || mySceneID==sceneID) { redrawScene();}
+    }
+    static CmdOnLayerDestroyed() {
+        if(!NetSyncer.isMaster){return;}
+        let sceneID = canvas.scene.id;
+        game.socket.emit('module.betterdraw', {event: "layerDestroyed", sceneID: sceneID});
+    }
+    static RpcOnLayerDestroyed(sceneID){
+        if(NetSyncer.isMaster) { return; }
+        //Only redraw if i am on the same scene as the one that just had its layer destroyed
+        console.log("Recieved onlayerdestroyed");
+        let mySceneID = (canvas? (canvas.scene? canvas.scene.id : undefined) : undefined);
+        if(mySceneID==undefined || mySceneID==sceneID) { redrawScene();}
     }
 }

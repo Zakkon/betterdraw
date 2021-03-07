@@ -1,7 +1,4 @@
-import Color32 from "./color32";
-import LoadAction from "./loadAction";
-import PixelMap from "./pixelmap";
-import SmartTexture from "./smarttexture";
+import PixelMap from "../drawing/pixelmap";
 var pixels = require('image-pixels');
 
 
@@ -22,7 +19,6 @@ export default class DrawLayer extends CanvasLayer {
         this.pixelmap.checkHealth();
         if(this.layer&& this.layer._destroyed){
             console.error("drawLayer.layer seems to have been destroyed!");
-            console.log(this.layer);
             this.layer = undefined; //throw it away
             //Create a new one
         }

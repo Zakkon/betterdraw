@@ -1,9 +1,8 @@
-import { getUserSetting } from "../../settings";
-import { isNullNumber, pixelPosToWorldPos, webToHex } from "../../helpers"
+import { getUserSetting } from "../settings";
+import { isNullNumber, pixelPosToWorldPos, webToHex } from "../helpers"
 import BrushTool from "./brushTool";
-import { LayerSettings } from "../layerSettings";
+import { LayerSettings } from "../layer/layerSettings";
 import ToolsHandler from "./toolsHandler";
-import SimpleDrawLayer from "../simpledraw";
 
 export default class GridBrushTool extends BrushTool {
     
@@ -23,10 +22,10 @@ export default class GridBrushTool extends BrushTool {
     onPointerMove(p, pixelPos, e) {
         const size = getUserSetting('brushSize');
         //Todo: cursor object
-        const preview = ToolsHandler.singleton.getToolPreview("grid");
+        const cursorObj = ToolsHandler.singleton.getToolCursor("grid");
 
         const wp = pixelPosToWorldPos(pixelPos);
-        this.positionCursor(preview, wp.x, wp.y, size, size);
+        this.positionCursor(cursorObj, wp.x, wp.y, size, size);
 
         //If we have begun our stroke
         if (this.op) {

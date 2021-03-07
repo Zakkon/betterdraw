@@ -1,8 +1,7 @@
-import { runInThisContext } from "vm";
-import { webToHex } from "../../helpers";
-import { LayerSettings } from "../layerSettings";
+import { webToHex } from "../helpers";
+import { LayerSettings } from "../layer/layerSettings";
 
-export default class ToolPreviewObj extends PIXI.Graphics {
+export default class ToolCursor extends PIXI.Graphics {
     constructor(brushType){
         
         super();

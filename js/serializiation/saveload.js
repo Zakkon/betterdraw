@@ -1,6 +1,6 @@
-import { getDrawLayer } from "../../helpers";
-import { getSetting, setSetting, setStrokes, setLayerSettings, getLayerSettings } from "../../settings";
-import { LayerSettings } from "../layerSettings";
+import { getDrawLayer } from "../helpers";
+import { getSetting, setSetting, setStrokes, setLayerSettings, getLayerSettings } from "../settings";
+import { LayerSettings } from "../layer/layerSettings";
 
 /**
  * 

@@ -1,12 +1,9 @@
-import { getUserSetting } from "../../settings";
-import { getDrawLayer, pixelPosToWorldPos, webToHex } from "../../helpers"
+import { getUserSetting } from "../settings";
+import { getDrawLayer, pixelPosToWorldPos, webToHex } from "../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
-import { PaintSyncer } from "./paintSyncer";
-import { NetSyncer } from "../netSyncer";
-import BrushTool from "./brushTool";
-import { LayerSettings } from "../layerSettings";
+import { LayerSettings } from "../layer/layerSettings";
 
 export default class RectTool extends DrawTool {
     
@@ -34,7 +31,7 @@ export default class RectTool extends DrawTool {
     onPointerMove(p, pixelPos, e) {
         //Todo: check if mouse is still down. If not, interrupt
 
-        const preview = this.getPreviewObj();
+        const cursorObj = this.getCursorObj();
         // If drag operation has started
         if (this.op) {
             if(pixelPos.x==this.lastPos.x && pixelPos.y==this.lastPos.y){ this.lastPos = {x:pixelPos.x, y:pixelPos.y}; return;} //Simple checker to make sure that cursor has moved
@@ -42,7 +39,7 @@ export default class RectTool extends DrawTool {
             this.dragCurrent = this.lastPos;
             let rect = this.getRect();
             const wp = pixelPosToWorldPos({x:rect.x, y:rect.y});
-            this.positionCursor(preview, wp.x, wp.y, rect.width, rect.height);
+            this.positionCursor(cursorObj, wp.x, wp.y, rect.width, rect.height);
         }
        
     }
@@ -50,13 +47,13 @@ export default class RectTool extends DrawTool {
         this.interruptStroke();
         this.op = false;
     }
-    getPreviewObj(){ return ToolsHandler.singleton.getToolPreview("rect"); }
+    getCursorObj(){ return ToolsHandler.singleton.getToolCursor("rect"); }
     beginStroke(){
         this.op = true;
         const isCellMode = false; //find from somewhere
         const brushSize = 1;//getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
-        //Draw rect shape here with the preview obj, but dont start an actual stroke yet
+        //Draw rect shape here with the cursor obj, but dont start an actual stroke yet
     }
     interruptStroke(){
         if(this.op) {
@@ -65,7 +62,7 @@ export default class RectTool extends DrawTool {
             this.syncer.LogRect(rect.x, rect.y, rect.width, rect.height, 1, this.brushColor);
         }
         this.op = false;
-        this.positionCursor(this.getPreviewObj(), 0,0,0,0);
+        this.positionCursor(this.getCursorObj(), 0,0,0,0);
     }
     positionCursor(cursor, x, y, width, height){
         cursor.transform.scale.x = 1;
@@ -78,8 +75,8 @@ export default class RectTool extends DrawTool {
     getRect(){
         let fromX = this.dragStart.x < this.dragCurrent.x? this.dragStart.x : this.dragCurrent.x;
         let fromY = this.dragStart.y < this.dragCurrent.y? this.dragStart.y : this.dragCurrent.y;
-        let width = Math.abs(this.dragCurrent.x - this.dragStart.x);
-        let height = Math.abs(this.dragCurrent.y - this.dragStart.y);
+        let width = Math.abs(this.dragCurrent.x - this.dragStart.x) + 1;
+        let height = Math.abs(this.dragCurrent.y - this.dragStart.y) + 1;
         return {x:fromX, y:fromY, width: width, height: height};
     }
 }

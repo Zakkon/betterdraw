@@ -1,11 +1,9 @@
-import { brushSizeIsDiameter, getUserSetting } from "../../settings";
-import { getDrawLayer, webToHex } from "../../helpers"
+import { brushSizeIsDiameter, getUserSetting } from "../settings";
+import { getDrawLayer, webToHex } from "../helpers"
 import DrawTool from "./drawTool";
 import ToolsHandler from "./toolsHandler";
 import Color32 from "../color32";
-import { PaintSyncer } from "./paintSyncer";
-import { NetSyncer } from "../netSyncer";
-import { LayerSettings } from "../layerSettings";
+import { LayerSettings } from "../layer/layerSettings";
 
 export default class BrushTool extends DrawTool {
     
@@ -18,7 +16,7 @@ export default class BrushTool extends DrawTool {
     }
 
     onPointerDown(p, pixelPos,e) {
-        let color = getUserSetting('brushColor')//0xff0000;
+        let color = getUserSetting('brushColor');
         if(color==undefined) { color = "#ff0000" };
         color = webToHex(color);
         color = Color32.fromHex(color);
@@ -30,10 +28,10 @@ export default class BrushTool extends DrawTool {
         
     }
     onPointerMove(p, pixelPos, e) {
-        const size = getUserSetting('brushSize');//this.brushSize;
+        const size = getUserSetting('brushSize');
         //Move the brush cursor object
-        const preview = this.getPreviewObj();
-        this.positionCursor(preview, p.x, p.y, size, size);
+        const cursorObj = this.getCursorObj();
+        this.positionCursor(cursorObj, p.x, p.y, size, size);
 
         //If we have begun our stroke
         if (this.op) {
@@ -47,8 +45,8 @@ export default class BrushTool extends DrawTool {
         this.interruptStroke();
         this.op = false;
     }
-    getPreviewObj(){
-        return ToolsHandler.singleton.getToolPreview("ellipse");
+    getCursorObj(){
+        return ToolsHandler.singleton.getToolCursor("ellipse");
     }
 
     beginStroke() {

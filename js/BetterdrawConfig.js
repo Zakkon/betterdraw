@@ -1,5 +1,5 @@
-import { webToHex, hexToWeb } from '../helpers.js';
-import { getUserSetting, setUserSetting, setSetting, getSetting } from "../settings.js";
+import { webToHex, hexToWeb } from './helpers.js';
+import { getUserSetting, setUserSetting, setSetting, getSetting } from "./settings.js";
 
 export default class BetterdrawConfig extends FormApplication {
   static get defaultOptions() {
