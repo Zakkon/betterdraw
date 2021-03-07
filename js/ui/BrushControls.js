@@ -26,7 +26,6 @@ export default class BrushControls extends FormApplication {
 
     setUserSetting('brushColor', formData.brushColor);
     getDrawLayer().setCursorTint();
-
   }
 
   /**
