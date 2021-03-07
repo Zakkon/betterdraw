@@ -1,12 +1,9 @@
 import { getUserSetting } from "../../settings";
 import { isNullNumber, webToHex } from "../../helpers"
-import DrawTool from "./drawTool";
-import ToolsHandler from "./toolsHandler";
-import Color32 from "../color32";
-import { PaintSyncer } from "./paintSyncer";
-import { NetSyncer } from "../netSyncer";
 import BrushTool from "./brushTool";
 import { LayerSettings } from "../layerSettings";
+import ToolsHandler from "./toolsHandler";
+import SimpleDrawLayer from "../simpledraw";
 
 export default class GridBrushTool extends BrushTool {
     
@@ -19,25 +16,40 @@ export default class GridBrushTool extends BrushTool {
         const brushSize = getUserSetting('brushSize');
         if(!this.brushColor){console.log("BrushColor is undefined!");}
 
-        this.syncer.LogBrushStart_Cells(this.type, this.brushColor, brushSize);
+        this.syncer.LogStrokeStart(this.type, this.brushColor, brushSize, true);
     }
     onPointerMove(p, pixelPos, e) {
-        const size = getUserSetting('brushSize');//this.brushSize;
-        const preview = this.getPreviewObj();
-        preview.width = size * 2;
-        preview.height = size * 2;
-        preview.x = p.x;
-        preview.y = p.y;
-        // If drag operation has started
+        const size = getUserSetting('brushSize');
+        //Todo: cursor object
+        const preview = ToolsHandler.singleton.getToolPreview("grid");
+
+        //this.positionCursorClamped(preview, p.x, p.y, size, size, gridX, gridY);
+        let wp = SimpleDrawLayer.pixelPosToWorldPos(pixelPos);
+        this.positionCursor(preview, wp.x, wp.y, size, size);
+
+        //If we have begun our stroke
         if (this.op) {
-            
-        const gridSize = LayerSettings.pixelsPerGrid;
-        if(isNullNumber(gridSize)){console.error("current gridsize is invalid!");}
-        const gridX = Math.floor(pixelPos.x / gridSize);
-        const gridY = Math.floor(pixelPos.y / gridSize);
+            const gridSize = LayerSettings.pixelsPerGrid;
+            if(isNullNumber(gridSize)) {console.error("current gridsize is invalid!"); }
+            const gridX = Math.floor(pixelPos.x / gridSize);
+            const gridY = Math.floor(pixelPos.y / gridSize);
+
             if(gridX==this.lastPos.x && gridY==this.lastPos.y){ this.lastPos = {x:gridX, y:gridY}; return;} //Simple checker to make sure that cursor has moved
             this.lastPos = {x:gridX, y:gridY};
-            this.syncer.LogBrushStep(gridX, gridY);
+            //Log a step in the stroke
+            this.syncer.LogStrokeStep(gridX, gridY);
         }
+    }
+
+    positionCursorClamped(cursor, x, y, width, height, gridX, gridY){
+        cursor.transform.scale.x = 1;
+        cursor.transform.scale.y = 1;
+        cursor.width = ((width * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        cursor.height = ((height * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.y) / LayerSettings.pixelsPerGrid;
+
+        let xx = ((gridX * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        let yy = ((gridX * LayerSettings.sceneWidthPerGrid) / cursor.parent.transform.scale.x) / LayerSettings.pixelsPerGrid;
+        cursor.x = xx;
+        cursor.y = yy;
     }
 }

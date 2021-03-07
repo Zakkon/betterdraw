@@ -183,7 +183,6 @@ export default class PixelMap {
                 let dy = ey - y; //distance
                 if(ex<0||ex>=this.width||ey<0||ey>=this.height){continue;}
                 let distanceSquared = Math.abs(dx * dx + dy * dy);
-                console.log(distanceSquared + " < " + radiusSquared);
                 if(distanceSquared<=radiusSquared) {
 
                     pixel_i4 = ((this.width * ey) + ex) * 4;

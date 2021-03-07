@@ -18,7 +18,9 @@ export function SaveLayer(settings, buffer) {
     savePNG(buffer, imgname, dataPath)
 }
 export function QuicksaveLayer() {
+    //scene flags should tell us where to quicksave to
     let settings = getSetting("drawlayerinfo");
+    //Catch here if nothing found
     let buffer = canvas.drawLayer.pixelmap.texture.encodeToPNG();
     SaveLayer(settings, buffer);
 }

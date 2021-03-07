@@ -1,4 +1,4 @@
-#simplefog-brush-controls {
+#betterdraw-brush-controls {
     position: absolute;
     left: 120px;
     width: 180px;
@@ -6,23 +6,23 @@
     top: 74px; /*debug*/
 }
 
-#simplefog-brush-controls h3,
-#simplefog-brush-controls .label {
+#betterdraw-brush-controls h3,
+#betterdraw-brush-controls .label {
     color: #FFF;
 	text-shadow: 1px 1px 0 #000;
 }
 
-#simplefog-brush-controls .label {
+#betterdraw-brush-controls .label {
     position: absolute;
     top: 14px;
 }
-#simplefog-brush-controls .brush-opacity {
+#betterdraw-brush-controls .brush-opacity {
     position: relative;
 }
-#simplefog-brush-controls .right-label {
+#betterdraw-brush-controls .right-label {
     right: 0;
 }
-#simplefog-brush-controls .left-label {
+#betterdraw-brush-controls .left-label {
     left: 0;
 }
 

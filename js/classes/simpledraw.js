@@ -3,6 +3,7 @@ import DrawingHistory from "./drawingHistory.js";
 import DrawLayer from "./drawlayer.js";
 import ToolsHandler from "./tools/toolsHandler.js";
 import { QuicksaveLayer, saveLayer } from "./serializiation/saveload.js";
+import { NetSyncer } from "./netSyncer.js";
 
 export default class SimpleDrawLayer extends DrawLayer {
 
@@ -51,10 +52,10 @@ export default class SimpleDrawLayer extends DrawLayer {
         this.setPreviewTint();
         if (tool === 'brush') {
           this.ellipsePreview.visible = true;
-          $('#simplefog-brush-controls #brush-size-container').show();
+          $('#betterdraw-brush-controls #brush-size-container').show();
         }
         else {
-          $('#simplefog-brush-controls #brush-size-container').hide();
+          $('#betterdraw-brush-controls #brush-size-container').hide();
         }
         if (tool === 'grid') {
           if (canvas.scene.data.gridType === 1) {
@@ -126,18 +127,18 @@ export default class SimpleDrawLayer extends DrawLayer {
     */
     _registerKeyboardListeners() {
     $(document).keydown((event) => {
-    // Only react if simplefog layer is active
+    // Only react if betterdraw layer is active
         if (ui.controls.activeControl !== this.layername) return;
         // Don't react if game body isn't target
         if (!event.target.tagName === 'BODY') return;
-        if (event.which === 219 && this.activeTool === 'brush') {
+        /* if (event.which === 219 && this.activeTool === 'brush') {
             const s = getUserSetting('brushSize');
             this.setBrushSize(s * 0.8);
         }
         if (event.which === 221 && this.activeTool === 'brush') {
             const s = getUserSetting('brushSize');
             this.setBrushSize(s * 1.25);
-        }
+        } */
 
         //debug, ctrl+s to test save the layer
         if(event.which === 83 && event.ctrlKey) {
@@ -149,7 +150,8 @@ export default class SimpleDrawLayer extends DrawLayer {
         // React to ctrl+z
         if (event.which === 90 && event.ctrlKey) {
             event.stopPropagation();
-            this.undo();
+            NetSyncer.UndoLast();
+
             }
         });
     }
@@ -158,20 +160,11 @@ export default class SimpleDrawLayer extends DrawLayer {
      */
     _pointerDown(e) {
         if(!this.isSetup){return;}
-        console.log("draw");
         // Don't allow new action if history push still in progress
         if (this.history.historyBuffer.length > 0) return;
         // On left mouse button
         if (e.data.button === 0) {
             let data = this._cursorData(e);
-            console.log("drawlayer:");
-            console.log(canvas.drawLayer);
-            console.log("drawlayer.layer:");
-            console.log(canvas.drawLayer.layer);
-            console.log("p:");
-            console.log(data.p);
-            console.log("p2:");
-            console.log(data.pixelPos);
 
             this.op = true;
             // Check active tool
@@ -214,14 +207,29 @@ export default class SimpleDrawLayer extends DrawLayer {
         let r = canvas.dimensions.sceneRect;
         //Pixel on the drawlayer (needs rounding)
         //let pixelPos = {x:(p.x*canvas.drawLayer.transform.scale.x)-r.x, y:(p.y*canvas.drawLayer.transform.scale.y)-r.y};
-        let l = canvas.drawLayer.layer.transform;
-        let pixelPos = {x:(p.x-l.position.x)/l.scale.x, y:(p.y-l.position.y)/l.scale.y};
+        let pixelPos = SimpleDrawLayer.worldPosToPixelPos(p);
 
         // Round positions to nearest pixel
         //If we want to round to a square pixel, rounding down is more accurate, as the value only changes once the cursor moves onto a new pixel, not whenever it happens to be closer to the top-left of another pixel
         pixelPos.x = Math.floor(pixelPos.x);
         pixelPos.y = Math.floor(pixelPos.y);
         return {p:p, pixelPos: pixelPos};
+    }
+    static worldPosToPixelPos(worldPos){
+        //Point in worldspace to pixel on the scene canvas
+        //Used primarily in mouse cursor transformations
+        const l = canvas.drawLayer.layer.transform;
+        let pixelPos = {x:(worldPos.x-l.position.x)/l.scale.x, y:(worldPos.y-l.position.y)/l.scale.y};
+        return pixelPos;
+    }
+    static pixelPosToWorldPos(pixelPos)
+    {
+        //Point on the scene canvas to point in worldspace
+        //Used primarily in mouse cursor transformations
+        const l = canvas.drawLayer.layer.transform;
+        //think this is right, hasnt been tested
+        let worldPos = {x:(pixelPos.x*l.scale.x)+l.position.x, y:(pixelPos.y*l.scale.y)+l.position.y};
+        return worldPos;
     }
 
     /**

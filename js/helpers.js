@@ -117,14 +117,14 @@ export function pixiDump(tgt = null) {
 /**
  * Prints formatted console msg if string, otherwise dumps object
  * @param data {String | Object} Output to be dumped
- * @param force {Boolean}        Log output even if CONFIG.debug.simplefog = false
+ * @param force {Boolean}        Log output even if CONFIG.debug.betterdraw = false
  */
-export function simplefogLog(data, force = false) {
-  if (CONFIG.debug.simplefog || force) {
+export function betterdrawLog(data, force = false) {
+  if (CONFIG.debug.betterdraw || force) {
     // eslint-disable-next-line no-console
-    if (typeof data === 'string') console.log(`Simplefog | ${data}`);
+    if (typeof data === 'string') console.log(`Betterdraw | ${data}`);
     // eslint-disable-next-line no-console
-    else console.log('Simplefog |', data);
+    else console.log('Betterdraw |', data);
   }
 }
 

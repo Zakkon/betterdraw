@@ -28,7 +28,7 @@ export default class DrawingHistory {
 
     await canvas.scene.unsetFlag("betterdraw", "history");
     await this.setSetting("history", history);
-    //simplefogLog(`Pushed ${this.historyBuffer.length} updates.`);
+    //betterdrawLog(`Pushed ${this.historyBuffer.length} updates.`);
     console.log("Pushed " + this.historyBuffer.length + " updates");
     // Clear the history buffer
     this.historyBuffer = [];
