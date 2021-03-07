@@ -15,6 +15,7 @@ export class Stroke {
         this.cellBased = cellBased;
         this.isActive = true;
         this.xyCoords = [];
+        this.timestamp = 0;
         this.parseIndex = 0;
     }
     /**

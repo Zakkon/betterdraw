@@ -27,6 +27,11 @@ export default class BrushTool extends DrawTool {
           return func.apply(this, allArguments);
         };
     }
+    /**
+     * 
+     * @param {PaintSyncer} syncer 
+     * @param {any} canvas 
+     */
     renderStack(syncer, canvas) {
         var parts = syncer.GetReadyStrokeParts();
         if(parts===undefined||parts.length<1) { return; }

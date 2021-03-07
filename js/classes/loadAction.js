@@ -1,7 +1,7 @@
 var pixels = require('image-pixels');
 import { data } from "jquery";
-import { calcGridImportSize, getDrawLayer, hexToColor, isNullNumber, webToHex } from "../helpers.js";
-import { getSetting, setSetting } from "../settings.js";
+import { calcGridImportSize, getDrawLayer, hexToColor, isNullNumber, webToHex, sleep, setLayerControlsInteractable } from "../helpers.js";
+import { getSetting, setLayerSettings, setSetting } from "../settings.js";
 import Color32 from "./color32.js";
 import { LayerSettings } from "./layerSettings.js";
 import { SaveLayer } from "./serializiation/saveload.js";
@@ -90,27 +90,48 @@ export default class LoadAction {
         For the moment, I am going to go with option A, since it keeps things simple. If I down the line want to do something like complex like Scenario C up in the 'Calculating Grid & Texture Size' section, option B might be better.
         */
 
-        
-        //If buffer was gained from an image file
-        if(settings.hasSourceTexture)
+        let fallback = false;
+        //If the settings claim to know of an image file, and doesnt already contain a buffer
+        if(settings.hasImageFile && !settings.hasBuffer && (settings.imageFilename!=null&&settings.imageFilename.length>0))
         {
-            const presampleTexture = false;
-            if(!presampleTexture){ //Option A
-                //We want the pixelmap to just cache the buffer as it is
+            let buffer = null; let bufferWidth = 0; let bufferHeight = 0;
+            try { //Load the buffer
+                var {data, width, height} = await pixels('/betterdraw/uploaded/'+settings.imageFilename);
+                console.log("Loaded texture size: " + width+"x"+height);
+                buffer = data; bufferWidth = width; bufferHeight = height; //Cache these so we can use them later
+            }
+            catch { fallback = true; console.error("Failed loading an image file at " + settings.imageFilename); }
+            if(buffer!=null) //If getting the buffer was a success
+            {
+                try {
+                    //Read from this buffer, and apply them to the pixelmap
+                    const presampleTexture = false;
+                    if(!presampleTexture){ //Option A
+                        //We want the pixelmap to just cache the buffer as it is
+                        pm.ReadFromBuffer(buffer, bufferWidth, bufferHeight, true);
+                        console.log("Loaded source texture straight from buffer");
+                    }
+                    else{ //Option B
+                        //We want the pixelmap to rescale the buffer and cache that
+                        pm.ReadFromBuffer_Scaled(buffer, bufferWidth, bufferHeight, texSize.w, texSize.h, true);
+                        console.log("Loaded source texture and scaled it to fit our layer");
+                    }
+                }
+                catch { fallback = true; console.error("Failed to load the image buffer and apply it to the pixelmap"); }
+            }
+            else{fallback = true;}
+        }
+        //If we only have a buffer stored in the LayerSettings, we can use that right now
+        else if(settings.hasBuffer) {
+            try { //Try reading the 
                 pm.ReadFromBuffer(settings.buffer, settings.bufferWidth, settings.bufferHeight, true);
-                console.log("Loaded source texture straight from buffer");
             }
-            else{ //Option B
-                //We want the pixelmap to rescale the buffer and cache that
-                pm.ReadFromBuffer_Scaled(settings.buffer, settings.bufferWidth, settings.bufferHeight, texSize.w, texSize.h, true);
-                console.log("Loaded source texture and scaled it to fit our layer");
-            }
+            catch { fallback = true; console.error("Failed to load the image buffer and apply it to the pixelmap"); }
+            
         }
-        //If we only have a buffer from somewhere, and we want to use it
-        else if(settings.loadFromBuffer) {
-            pm.ReadFromBuffer(settings.buffer, settings.bufferWidth, settings.bufferHeight, true);
-        }
-        else {
+        else{fallback = true;}
+
+        if(fallback) {
             console.log("No source texture was defined, filling it in with the background color instead");
             if(settings.backgroundColor===null||settings.backgroundColor===undefined) //Fill in with white for now?
             { settings.backgroundColor = "#ffffff"; console.log("Filled in with white, since no backgroundcolor was defined");}
@@ -119,13 +140,15 @@ export default class LoadAction {
             pm.Reform(texSize.w, texSize.h, col, true);
         }
 
+        setLayerControlsInteractable(true);
         //Put a wait period here, to let Foundry do nessesary setup functions before we continue
-        await this.sleep(100);
+        await sleep(100);
         //Now we can set the layer sprite as visible
-        layer.SetVisible(true);
+        layer.SetVisible(!settings.isHidden);
         //And then ofcourse make sure it is properly positioned
         layer.Reposition();
         layer.isSetup = true; //Allows us to interact with the layer using the cursor
+        console.log("Layer.isSetup now true");
 
         //Cache some values in the LayerSettings, for quick access during runtime
         LayerSettings.pixelsPerGrid = gridData.texturePixelsPerGrid;
@@ -138,40 +161,33 @@ export default class LoadAction {
 
         //Only the GM should be able to save
         if(!game.user.isGM) { return; }
-        let newSettings = { desiredGridSize: gridData.scenePixelsPerGrid,
-            textureWidth: texSize.w, textureHeight: texSize.h,
-            sceneWidth: sceneSize.w, sceneHeight: sceneSize.h };
-        
-        //Determine if we should save the entire image to a file aswell
-        //This is really only useful when there doesnt exist an image file yet
-        //Check if there already exists an image file
-        let previousSettings = getSetting("drawlayerinfo");
-        const existsImageFile = (previousSettings!=null&&previousSettings!=undefined) && previousSettings.hasimg;
-        if(!existsImageFile){
-            //An image file does not exist, we should do a complete save
+        //We will just save the settings we were given, and next time we load, we recalculate them in the same way we just did
+        let saveImgFile = false;
+        if(saveImgFile){
             let buffer = pm.texture.EncodeToPNG();
-            SaveLayer(newSettings, buffer);
+            //Will clear strokes, and save the settings with HasImageFile set to true, along with the filename
+            let filename = await SaveLayer(settings, buffer, false, true); //Save the image file
+            settings.hasImageFile = true;
+            settings.imageFilename = filename;
         }
-        else{
-            //An image file exists, all we need to do is to fill update the settings regarding the canvas and whatnot
-            previousSettings.desiredGridSize = newSettings.desiredGridSize;
-            previousSettings.textureWidth = newSettings.textureWidth;
-            previousSettings.textureHeight = newSettings.textureHeight;
-            previousSettings.sceneWidth = newSettings.sceneWidth;
-            previousSettings.sceneHeight = newSettings.sceneHeight;
-            //Save settings
-            setSetting("drawlayerinfo", previousSettings);
-        }
+        //Lets save the settings, but to make sure we dont have some unnessesary filler data in there, lets create a new one and copy some values over
+        let newSettings = new LayerSettings();
+        newSettings.desiredGridSize = settings.desiredGridSize;
+        newSettings.sceneWidth = settings.sceneWidth;
+        newSettings.sceneHeight = settings.sceneHeight;
+        newSettings.textureWidth = settings.textureWidth;
+        newSettings.textureHeight = settings.textureHeight;
+        newSettings.backgroundColor = settings.backgroundColor;
+        newSettings.hasImageFile = settings.hasImageFile;
+        newSettings.imageFilename = settings.imageFilename;
+        newSettings.isHidden = settings.isHidden;
+        await setLayerSettings(newSettings);
     }
     logLayerSettings(settings){
         console.error(settings);
     }
 
-    sleep(ms) {
-        return new Promise((resolve) => {
-          setTimeout(resolve, ms);
-        });
-    }  
+     
 
     /**
      * Very heavy function that updates the entire Foundry scene. Use only when nessesary.

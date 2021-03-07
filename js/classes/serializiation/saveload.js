@@ -1,29 +1,40 @@
 import { getDrawLayer } from "../../helpers";
-import { getSetting, setSetting } from "../../settings";
+import { getSetting, setSetting, setStrokes, setLayerSettings, getLayerSettings } from "../../settings";
+import { LayerSettings } from "../layerSettings";
 
-export function SaveLayer(settings, buffer) {
+/**
+ * 
+ * @param {LayerSettings} settings 
+ * @param {any} buffer 
+ * @param {boolean} saveSettings 
+ * @param {boolean} deleteStrokes 
+ */
+export async function SaveLayer(settings, buffer, saveSettings=true, deleteStrokes=true) {
     //We will save this layer as an image file
     //We will name the image file after the unique id of the scene, to avoid naming conflicts
     const id = canvas.scene.data._id;
-    const imgname = id + ".png"
+    const filename = id + ".png"
     
     //The scene flags need to know that we have an image saved, and the name of the image
-    settings.hasimg = true;
-    settings.imgname = imgname;
-    setSetting("drawlayerinfo", settings);
+    settings.hasImageFile = true;
+    settings.imageFilename = filename;
+    console.log("Settings that are being saved alongside texture: ");
+    console.log(settings);
+    if(saveSettings){ await setLayerSettings(settings);}
 
     //Clear any strokes saved to scene flags, as they wont be needed anymore once we have saved the image
     //Note: this means we cannot undo the strokes once the image has been saved!
-    setSetting("strokes", null);
+    if(deleteStrokes){ await setStrokes(null); }
 
     //Then save the image (png for now)
     const dataPath = "betterdraw/uploaded";
     console.log("Saving image file...");
-    savePNG(buffer, imgname, dataPath);
+    await savePNG(buffer, filename, dataPath);
+    return filename;
 }
-export function QuicksaveLayer() {
+export async function QuicksaveLayer() {
     //Scene flags should tell us where to quicksave to
-    let settings = getSetting("drawlayerinfo");
+    let settings = await getLayerSettings();
     const drawLayer = getDrawLayer();
     let buffer = drawLayer.pixelmap.texture.EncodeToPNG();
     SaveLayer(settings, buffer);

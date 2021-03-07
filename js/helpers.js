@@ -1,4 +1,5 @@
 import Color32 from "./classes/color32";
+import { LayerSettings } from "./classes/layerSettings";
 import SimpleDrawLayer from "./classes/simpledraw";
 import { getSetting, setSetting } from "./settings";
 
@@ -48,7 +49,14 @@ export function hexToColor(hex) { //Wants a color in a 0x000000 format
       for(i=0;i<3;i++){
           chunks.push(parseInt(tmp[i],16));
       }
-  }else {
+  }
+  else if(hex.length==8){
+    tmp = hex.match(/.{2}/g);
+      for(i=0;i<4;i++){
+          chunks.push(parseInt(tmp[i],16));
+      }
+  }
+  else {
       throw new Error("'"+hex+"' is not a valid hex format");
   }
   var c = new Color32(chunks[0], chunks[1], chunks[2]);
@@ -182,15 +190,19 @@ export function calcGridImportSize(pixelsPerGrid, textureWidth, textureHeight, s
   */
 
   let sceneSize = { w: sceneWidth, h: sceneHeight };
-  if(pixelsPerGrid<50) //Foundry doesnt allow for grid sizes < 50px
+  const minGridSize = LayerSettings.FoundryMinGridSize(); //Foundry doesnt allow for grid sizes < 50px
+  if(pixelsPerGrid<minGridSize) 
   {
-    let s = 50/pixelsPerGrid;
-    pixelsPerGrid = 50;
-    sceneSize.w = Math.ceil(sceneSize.w * s);
-    sceneSize.h = Math.ceil(sceneSize.h * s);
+    let f = minGridSize/pixelsPerGrid;
+    pixelsPerGrid = minGridSize;
+    //Upscale the scene rect size. A 10x10 px scene (where each px = 1 grid) now becomes a 500x500 px scene, where each grid = 50px
+    //Each grid would however still represent 1 pixel from the texture data itself
+    sceneSize.w = Math.ceil(sceneSize.w * f);
+    sceneSize.h = Math.ceil(sceneSize.h * f);
   }
   const sceneWidthInGrids = Math.ceil(sceneSize.w / pixelsPerGrid);
   const sceneHeightInGrids = Math.ceil(sceneSize.h / pixelsPerGrid);
+  //According to above example, a 10x10 px scene that was upscaled to 500x500px means that (10 / (500 / 50)) = 1 texture pixel per grid
   const texPixelsPerGrid = textureWidth / (sceneSize.w / pixelsPerGrid); //todo: x & y?
   //todo: max grid size
   //or if gridsize > tex size
@@ -228,4 +240,17 @@ export function pixelPosToWorldPos(pixelPos)
  */
 export function getDrawLayer(){
   return canvas.drawLayer; //SimpleDrawLayer
+}
+/**
+ * 
+ * @param {boolean} interactable 
+ */
+export function setLayerControlsInteractable(interactable){
+  getDrawLayer().showControls = interactable;
+}
+
+
+export async function redrawScene(){
+  const curScene = game.scenes.get(canvas.scene.data._id);
+  await canvas.draw(curScene);
 }
