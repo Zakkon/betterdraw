@@ -1,7 +1,7 @@
-import Color32 from "./classes/color32";
-import { LayerSettings } from "./classes/layerSettings";
-import SimpleDrawLayer from "./classes/simpledraw";
+import Color32 from "./color32";
 import { getSetting, setSetting } from "./settings";
+import { LayerSettings } from "./layer/layerSettings";
+import SimpleDrawLayer from "./layer/simpledraw";
 
 /**
  * Converts web colors to base 16

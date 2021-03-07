@@ -1,6 +1,6 @@
-import { colorToHex, hexToWeb } from "../../helpers";
-import { setUserSetting } from "../../settings";
-import BrushControls from "../BrushControls";
+import { colorToHex, hexToWeb } from "../helpers";
+import { setUserSetting } from "../settings";
+import BrushControls from "../ui/BrushControls";
 
 export default class EyedropperTool {
 
@@ -13,8 +13,6 @@ export default class EyedropperTool {
         //Sample
         let pm = canvas.drawLayer.pixelmap;
         let pi = pm.GetPixel(pixelPos.x, pixelPos.y);
-        console.log("Picked color: ");
-        console.log(pi);
         let hex = colorToHex(pi);
         let web = hexToWeb(hex);
         setUserSetting('brushColor', web);

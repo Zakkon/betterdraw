@@ -1,8 +1,7 @@
-import ToolPreviewObj from "./tools/toolPreviewObj.js";
 import DrawLayer from "./drawlayer.js";
-import ToolsHandler from "./tools/toolsHandler.js";
-import { QuicksaveLayer } from "./serializiation/saveload.js";
-import { NetSyncer } from "./netSyncer.js";
+import ToolsHandler from "../tools/toolsHandler.js";
+import { QuicksaveLayer } from "../serializiation/saveload.js";
+import { NetSyncer } from "../netSyncer.js";
 import { worldPosToPixelPos } from "../helpers.js";
 
 export default class SimpleDrawLayer extends DrawLayer {
@@ -48,19 +47,10 @@ export default class SimpleDrawLayer extends DrawLayer {
         ToolsHandler.singleton.setActiveTool(tool);
     }
     
-    setPreviewTint() {
-        ToolsHandler.singleton.setPreviewTint();
+    setCursorTint() {
+        ToolsHandler.singleton.setToolCursorTint();
     }
 
-    /**
-     * Sets the active tool & shows preview for brush & grid tools
-     * @param {Number}  Size in pixels
-     */
-    async setBrushSize(s) {
-        await setUserSetting('brushSize', s);
-        const p = { x: this.ellipsePreview.x, y: this.ellipsePreview.y };
-        this._pointerMoveBrush(p);
-    }
 
 
     /**

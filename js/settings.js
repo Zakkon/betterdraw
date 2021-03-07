@@ -1,4 +1,4 @@
-import { LayerSettings } from "./classes/layerSettings";
+import { LayerSettings } from "./layer/layerSettings";
 
 export function getSetting(name) {
     let setting = getSceneFlag(name);

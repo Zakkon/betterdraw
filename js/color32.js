@@ -1,4 +1,4 @@
-import { hexToColor, webToHex } from "../helpers";
+import { hexToColor, webToHex } from "./helpers";
 
 export default class Color32 {
 

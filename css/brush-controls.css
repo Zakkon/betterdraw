@@ -104,6 +104,9 @@
   .eyedropper-icon{
     background-image: url(eyedropper.svg);
   }
+  .betterdraw-icon{
+    background-image: url(pencil-alt-plus.svg);
+  }
   .custom-icon{
     display: inline-block;
     width: 24px;
