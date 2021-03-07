@@ -1,3 +1,4 @@
+import { getDrawLayer } from "../helpers";
 import { setUserSetting, getUserSetting } from "../settings";
 
 export default class BrushControls extends FormApplication {
@@ -21,6 +22,15 @@ export default class BrushControls extends FormApplication {
     });
   }
 
+  async _updateObject(event, formData) {
+
+    //setUserSetting('brushSize', formData.brushSize);
+    //$("#brush-lbl").text("Brush Size: " + formData.brushSize);
+    //await setUserSetting('brushOpacity', percentToHex(formData.brushOpacity));
+    setUserSetting('brushColor', formData.brushColor);
+    getDrawLayer().setCursorTint();
+
+  }
 
   /**
    * Obtain module metadata and merge it with game settings which track current module visibility
