@@ -1,6 +1,4 @@
 node_modules
-/dist
-dist/bundle.js
 bugfixing.txt
 bugs.txt
 index.d.ts
