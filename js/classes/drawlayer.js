@@ -30,7 +30,6 @@ export default class DrawLayer extends CanvasLayer {
     get name(){return this.layername;}
 
     async init() {
-        
         this.checkHealth();
     }
     async checkHealth(){

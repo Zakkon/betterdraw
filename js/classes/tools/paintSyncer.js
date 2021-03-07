@@ -13,7 +13,7 @@ export class PaintSyncer {
      */
     get activeStroke() {return this.strokes[this.strokes.length-1];}
     /**
-     * 
+     * @param {string} type
      * @param {Color32} color 
      * @param {number} brushSize 
      */
@@ -24,13 +24,13 @@ export class PaintSyncer {
         this.strokes.push(stroke);
     }
     /**
-     * 
+     * @param {string} type
      * @param {Color32} color 
      * @param {number} brushSize 
      */
-    LogBrushStart_Cells(color, brushSize){
+    LogBrushStart_Cells(type, color, brushSize){
         this.strokes.forEach(function(s){s.isActive=false;});
-        var stroke = new Stroke(brushSize, color, true); stroke.isActive = true;
+        var stroke = new Stroke(type, brushSize, color, true); stroke.isActive = true;
         this.strokes.push(stroke);
     }
     /**
@@ -77,11 +77,14 @@ export class PaintSyncer {
             if(stroke.type=="circle") {
                 parts.push({type:stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color, brushSize:stroke.brushSize, cellBased: stroke.cellBased});
             }
+            else if(stroke.type=="grid") {
+                parts.push({ type:stroke.type, xyCoords: stroke.GetSteps(false), color:stroke.color });
+            }
             else if(stroke.type == "rect") {
                 parts.push({type: stroke.type, x:stroke.x, y:stroke.y, width:stroke.width, height:stroke.height, color:stroke.color, cellBased:stroke.cellBased});
             }
             else if(stroke.type==undefined){console.error("Brush does not have a designated type!");}
-            else{console.error("Did not recognize a brush of type " + stroke.type);}
+            else{console.error("Did not recognize a brush of type " + stroke.type); console.log(stroke);}
             //Delete the entire stroke if its empty and not the active stroke
             if(this.strokes[i].isEmpty && !this.strokes[i].isActive){
                 //Delete this stroke, its spent

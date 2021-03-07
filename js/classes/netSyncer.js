@@ -58,12 +58,13 @@ export class NetSyncer {
 
         //Send all past strokes to client
     }
-    static async onRecieveTexture(){
+    static async onRecieveTexture() {
         if(NetSyncer.isMaster) { return; }
         console.log("Recieved notice that image file has been refreshed. Loading image file...");
         var a = await NetSyncer.loadImageFile();
         let settings = getSetting("drawlayerinfo");
-        let e = await LayerSettings.LoadFromBuffer(settings, a.buffer);
+
+        let e = await LayerSettings.LoadFromBuffer(settings, a.buffer, a.width, a.height);
         let task = new LoadAction();
         task.Perform(e);
     }
@@ -140,7 +141,7 @@ export class NetSyncer {
         return o;
     }
     static _decodeStroke(data){
-        let s = new Stroke(data.brushSize, data.color, data.cellBased);
+        let s = new Stroke(data.type, data.brushSize, data.color, data.cellBased);
         s.xyCoords = data.xyCoords;
         return s;
     }
